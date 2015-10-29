@@ -282,4 +282,7 @@ nusmv/src/addons_core/compass/parser/ap/ParserAp.o \
 nusmv/src/addons_core/compass/parser/prob/ParserProb.o \
 nusmv/src/addons_core/compass/parser/prob/prob_grammar.o \
 nusmv/src/addons_core/compass/parser/prob/prob_input.o \
-cudd-2.4.1.1/lib/*.a
+cudd-2.4.1.1/lib/*.a \
+nusmv/src/sat/solvers/SatZchaff.o \
+zchaff_v2007.3.12/*.o \
+zchaff_v2007.3.12/*.a 

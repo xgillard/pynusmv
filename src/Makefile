@@ -1,4 +1,4 @@
-.PHONY: cudd nusmv pynusmv
+.PHONY: cudd zchaff nusmv pynusmv
 
 
 SF=$(shell getconf LONG_BIT)
@@ -35,7 +35,7 @@ endif
 
 
 
-all: cudd nusmv pynusmv
+all: cudd zchaff nusmv pynusmv
 
 
 cudd:
@@ -43,12 +43,17 @@ cudd:
 	$(get-os)
 	make -C cudd-2.4.1.1 -f Makefile$(OS)$(SF)
 
+zchaff:
+	@if [ ! -f zchaff_v2007.3.12/SAT_C.h ]; then \
+		cd zchaff; \
+		./build.sh; \
+	fi
 
-nusmv: cudd
+nusmv: cudd zchaff
 	@if [ ! -f nusmv/NuSMV ]; then \
 		cd nusmv; \
 		if [ ! -f Makefile ]; then \
-			./configure CFLAGS="-g -O2 -fPIC"; \
+			./configure --enable-zchaff CFLAGS="-g -O2 -fPIC"; \
 		fi; \
 		make; \
 	fi
