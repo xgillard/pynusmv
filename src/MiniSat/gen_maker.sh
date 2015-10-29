@@ -86,6 +86,7 @@ fi
 # applies the patch if needed
 if [ ! -f ${patched_tag} ]; then
     ${PATCH} -p0 -N < ${tool_patch} && ${TOUCH} ${patched_tag}
+    ${PATCH} -p0 -N < SolverTypes.patch
 fi
 
 curdir=`pwd`

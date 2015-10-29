@@ -1,4 +1,4 @@
-.PHONY: cudd zchaff nusmv pynusmv
+.PHONY: cudd zchaff minisat nusmv pynusmv
 
 
 SF=$(shell getconf LONG_BIT)
@@ -49,11 +49,17 @@ zchaff:
 		./build.sh; \
 	fi
 
-nusmv: cudd zchaff
+minisat:
+	@if [ ! -f MiniSat_v070721/libMiniSat.a ]; then \
+		cd MiniSat; \
+		./build.sh; \
+	fi
+
+nusmv: cudd zchaff minisat
 	@if [ ! -f nusmv/NuSMV ]; then \
 		cd nusmv; \
 		if [ ! -f Makefile ]; then \
-			./configure --enable-zchaff CFLAGS="-g -O2 -fPIC"; \
+			./configure --enable-zchaff --enable-minisat CFLAGS="-g -O2 -fPIC"; \
 		fi; \
 		make; \
 	fi
