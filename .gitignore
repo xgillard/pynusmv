@@ -7,3 +7,5 @@ __pycache__
 /src/zchaff_v2007.3.12
 /dep/pyparsing-2.0.2
 /src/pyparsing.py
+*.project
+*.cproject
