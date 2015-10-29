@@ -25,7 +25,7 @@ fi
 here=`pwd`
 
 mkdir -p $here/lib/
-g++ -shared $libexpat $libreadline $libncurses -o lib/libnusmv.so \
+g++ -shared -lsat -lsatsolvers -lminisat $libexpat $libreadline $libncurses -o lib/libnusmv.so \
 nusmv/cinitDummyMac.o \
 nusmv/main.o \
 nusmv/src/addons_core/addonsCore.o \
@@ -286,4 +286,8 @@ cudd-2.4.1.1/lib/*.a \
 nusmv/src/sat/solvers/SatZchaff.o \
 zchaff_v2007.3.12/*.o \
 zchaff_v2007.3.12/*.a \
-MiniSat_v070721/libMiniSat.a 
+MiniSat_v070721/libMiniSat.a \
+MiniSat_v070721/simp/libminisat.a \
+-LMiniSat_v070721/simp/ \
+-Lnusmv/src/sat/.libs/ \
+-Lnusmv/src/sat/solvers/.libs/ 
