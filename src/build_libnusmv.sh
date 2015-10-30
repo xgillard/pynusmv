@@ -290,4 +290,5 @@ MiniSat_v070721/libMiniSat.a \
 MiniSat_v070721/simp/libminisat.a \
 -LMiniSat_v070721/simp/ \
 -Lnusmv/src/sat/.libs/ \
--Lnusmv/src/sat/solvers/.libs/ 
+-Lnusmv/src/sat/solvers/.libs/ \
+-Lnusmv/.libs/

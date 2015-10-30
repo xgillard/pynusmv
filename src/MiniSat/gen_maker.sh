@@ -95,7 +95,7 @@ curdir=`pwd`
 # Make invokation:
 echo
 echo "Building ${tool} using <$MAKE $* $tool_targets> ..."
-cd ${tool_dir} && ${MAKE} $* ${tool_targets} CC="$CXX" CXX="$CXX" RANLIB="$RANLIB" AR="$AR"
+cd ${tool_dir} && ${MAKE} $* ${tool_targets} CC="$CXX" CXX="$CXX" CFLAGS="-fPIC" CXXFLAGS="-fPIC" RANLIB="$RANLIB" AR="$AR"
 echo
 # ----------------------------------------------------------------------
 
