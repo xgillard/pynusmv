@@ -1,4 +1,4 @@
-.PHONY: cudd zchaff minisat nusmv pynusmv
+.PHONY: cudd zchaff minisat nusmv pynusmv test
 
 
 SF=$(shell getconf LONG_BIT)
@@ -78,3 +78,6 @@ else
 	$(PYTHON) setup.py build_ext --inplace
 endif
 endif
+
+test: pynusmv
+	$(PYTHON) -m unittest discover
