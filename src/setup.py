@@ -840,6 +840,7 @@ extensions.append(
                             'nusmv/src/utils/object.h',
                             'nusmv/src/sat/solvers/SatMiniSat.h',
                             'nusmv/src/sat/solvers/satMiniSatIfc.h',
+                            'nusmv/src/sat/solvers/SatZChaff.h',
                             'lib/libnusmv.so',
                             
                             'pynusmv/nusmv/typedefs.tpl',
