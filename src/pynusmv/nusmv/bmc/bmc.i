@@ -19,12 +19,6 @@
 #include "../../../nusmv/src/bmc/bmcUtils.h" 
 %}
 
-// Ignoring unimplemented functions
-%ignore Bmc_GenSolveLtlInc;
-%ignore Bmc_GenSolveInvarZigzag;
-%ignore Bmc_GenSolveInvarDual;
-%ignore Bmc_GenSolveInvarFalsification;
-
 %feature("autodoc", 1);
 
 %include ../typedefs.tpl

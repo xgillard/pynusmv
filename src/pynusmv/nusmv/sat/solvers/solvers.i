@@ -26,6 +26,7 @@
 %include "../../../../nusmv/src/sat/solvers/SatMiniSat.h"
 %include "../../../../nusmv/src/sat/solvers/satMiniSatIfc.h"
 
+// Ignore functions not implemented in ZChaff
 %ignore SAT_SetClsDeletionInterval;
 %ignore SAT_SetMaxUnrelevance;
 %ignore SAT_SetMinClsLenForDelete;
