@@ -5,12 +5,12 @@
 %{
 #include "../../../nusmv/nusmv-config.h"
 #include "../../../nusmv/src/utils/defs.h"
-#include "../../../nusmv/src/trace/pkg_trace.h" 
-#include "../../../nusmv/src/trace/Trace.h" 
-#include "../../../nusmv/src/trace/TraceLabel.h" 
-#include "../../../nusmv/src/trace/TraceManager.h" 
-#include "../../../nusmv/src/trace/TraceOpt.h" 
-#include "../../../nusmv/src/trace/TraceXml.h" 
+#include "../../../nusmv/src/trace/pkg_trace.h"
+#include "../../../nusmv/src/trace/Trace.h"
+#include "../../../nusmv/src/trace/TraceLabel.h"
+#include "../../../nusmv/src/trace/TraceManager.h"
+#include "../../../nusmv/src/trace/TraceOpt.h"
+#include "../../../nusmv/src/trace/TraceXml.h"
 %}
 
 // Ignoring unimplemented functions
@@ -38,3 +38,28 @@
 %include ../../../nusmv/src/trace/TraceManager.h
 %include ../../../nusmv/src/trace/TraceOpt.h
 %include ../../../nusmv/src/trace/TraceXml.h
+
+%inline %{
+
+/* because concat requires 'other' address */
+Trace_ptr Trace_concatenate(Trace_ptr self, Trace_ptr other){
+  return Trace_concat(self, &other);
+}
+
+/* a structure describing an assignment as stored in the steps */
+typedef struct {
+  node_ptr      symbol;
+  node_ptr      value;
+  boolean       success;
+  TraceStepIter iter;
+} assignment_t;
+
+/* retrieves the content of a step */
+assignment_t Trace_step_get_assignment(TraceStepIter step_iter){
+  assignment_t result;
+  result.iter = step_iter;
+  result.success = Trace_step_iter_fetch(&result.iter, &result.symbol, &result.value);
+
+  return result;
+}
+%}

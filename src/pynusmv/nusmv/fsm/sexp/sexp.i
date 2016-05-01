@@ -6,10 +6,10 @@
 #include "../../../../nusmv/nusmv-config.h"
 #include "../../../../nusmv/src/utils/defs.h"
 #include "../../../../nusmv/src/utils/object.h"
-#include "../../../../nusmv/src/fsm/sexp/BoolSexpFsm.h" 
-#include "../../../../nusmv/src/fsm/sexp/Expr.h" 
-#include "../../../../nusmv/src/fsm/sexp/sexp.h" 
-#include "../../../../nusmv/src/fsm/sexp/SexpFsm.h" 
+#include "../../../../nusmv/src/fsm/sexp/BoolSexpFsm.h"
+#include "../../../../nusmv/src/fsm/sexp/Expr.h"
+#include "../../../../nusmv/src/fsm/sexp/sexp.h"
+#include "../../../../nusmv/src/fsm/sexp/SexpFsm.h"
 %}
 
 %feature("autodoc", 1);
@@ -22,3 +22,11 @@
 %include ../../../../nusmv/src/fsm/sexp/Expr.h
 %include ../../../../nusmv/src/fsm/sexp/sexp.h
 %include ../../../../nusmv/src/fsm/sexp/SexpFsm.h
+
+%inline %{
+
+SexpFsm_ptr boolsexpfsm_to_sexpfsm(BoolSexpFsm_ptr ptr){
+    return (SexpFsm_ptr) ptr;
+}
+
+%}

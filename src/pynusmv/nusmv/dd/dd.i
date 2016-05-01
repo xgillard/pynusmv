@@ -81,6 +81,27 @@ int bdd_equal (bdd_ptr a, bdd_ptr b) {
 }
 %}
 
+%inline %{
+  /*
+   * This structure and the accompanying function are required in order to
+   * turn disable/restore the reordering which is a necessary feature in
+   * order to build the bool_sexp_fsm.
+   */
+  typedef struct {
+    int status;
+    dd_reorderingtype method;
+  } reordering_status_result;
+
+  /*
+   * note: the result is passed by value (on purpose !)
+   */
+  reordering_status_result wrap_dd_reordering_status(DdManager *dd) {
+    reordering_status_result result;
+    result.status = Cudd_ReorderingStatus(dd, &(result.method));
+    return result;
+  }
+%}
+
 %include ../../../nusmv/src/utils/defs.h
 %include ../../../nusmv/src/dd/dd.h
 %include ../../../nusmv/src/dd/VarsHandler.h

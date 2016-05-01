@@ -3,6 +3,7 @@
 %include ../global.i
 
 %{
+#include <stdio.h>
 #include "../../../nusmv/nusmv-config.h"
 #include "../../../nusmv/src/utils/defs.h"
 #include "../../../nusmv/src/be/be.h" 

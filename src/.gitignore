@@ -12,6 +12,10 @@ lib/
 
 *_wrap.c
 
+
+.coverage
+htmlcov/
+
 MiniSat/minisat-2.2.0.tar.gz
 MiniSat/minisat/
 MiniSat/minisat2-070721.zip
@@ -166,3 +170,5 @@ pynusmv/nusmv/trans/trans.py
 pynusmv/nusmv/utils/utils.py
 pynusmv/nusmv/wff/w2w/w2w.py
 pynusmv/nusmv/wff/wff.py
+
+/.idea/

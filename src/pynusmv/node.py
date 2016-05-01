@@ -120,10 +120,13 @@ class Node(PointerWrapper):
 
     def _free(self):
         if self._freeit and self._ptr is not None:
-            nsnode.node_free(self._ptr)
+            nsnode.free_node(self._ptr)
             self._freeit = False
 
     def __str__(self):
+        return nsnode.sprint_node(self._ptr)
+    
+    def __repr__(self): # makes debugging easier
         return nsnode.sprint_node(self._ptr)
 
     def __eq__(self, other):
@@ -143,6 +146,8 @@ class Node(PointerWrapper):
 
     @staticmethod
     def from_ptr(ptr, freeit=False):
+        if ptr == None: 
+            return None
         cls = type_to_class[ptr.type]
         new_node = cls.__new__(cls)
         new_node._freeit = freeit
@@ -685,7 +690,7 @@ class Expression(Node):
     def unsigned(self):
         return CastUnsigned(self)
 
-    def extend(size):
+    def extend(self,size):
         return Extend(self, size)
 
     def waread(self, expression):
@@ -694,14 +699,14 @@ class Expression(Node):
     def read(self, expression):
         return Waread(self, expression)
 
-    def wawrite(second, third):
+    def wawrite(self, second, third):
         return Wawrite(self, second, third)
 
     def write(self, second, third):
         return Wawrite(self, second, third)
 
     def uwconst(self, expression):
-        return Uwcons(self, expression)
+        return Uwconst(self, expression)
 
     def swconst(self, expression):
         return Swconst(self, expression)
@@ -1064,7 +1069,7 @@ class Case(Expression):
             values = list(values.items())
 
         res = Failure("case conditions are not exhaustive",
-                      nsutils.FAIRLURE_CASE_NOT_EXHAUSTIVE)._ptr
+                      nsutils.FAILURE_CASE_NOT_EXHAUSTIVE)._ptr
         for condition, expression in reversed(values):
             condition = self._handle_next_expression(condition)
             expression = self._handle_next_expression(expression)

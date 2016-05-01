@@ -9,4 +9,4 @@ __pycache__
 /src/pyparsing.py
 *.project
 *.cproject
-lib/
+lib

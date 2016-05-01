@@ -1,0 +1,14 @@
+OSX INSTALL INSTRUCTION
+=======================
+
+On OSX, after you have completed the compilation of PyNuSMV you will probably want to add the following 
+three lines to your ~/.profile file:
+
+export PYNUSMV=<path_to_your_pynusmv_root_directory>
+export PYTHONPATH=$PYTHONPATH:$PYNUSMV/src
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$PYNUSMV/src/lib
+
+
+If you intend to extend PyNuSMV using Eclipse, you'll probably want to add the following in the 'environment'
+section of your preferred python3 interpreter:
+DYLD_LIBRARY_PATH=<path_to_your_pynusmv_root_directory>/src/lib

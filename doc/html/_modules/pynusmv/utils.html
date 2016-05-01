@@ -6,15 +6,15 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>pynusmv.utils &mdash; PyNuSMV 0.10 documentation</title>
+    <title>pynusmv.utils &mdash; PyNuSMV 0.11 documentation</title>
     
-    <link rel="stylesheet" href="../../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/classic.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.10',
+        VERSION:     '0.11',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -23,11 +23,11 @@
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
-    <link rel="top" title="PyNuSMV 0.10 documentation" href="../../index.html" />
+    <link rel="top" title="PyNuSMV 0.11 documentation" href="../../index.html" />
     <link rel="up" title="Module code" href="../index.html" /> 
   </head>
-  <body>
-    <div class="related">
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -36,31 +36,32 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">PyNuSMV 0.10 documentation</a> &raquo;</li>
-          <li><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">PyNuSMV 0.11 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
       </ul>
     </div>  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-          <div class="body">
+          <div class="body" role="main">
             
   <h1>Source code for pynusmv.utils</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">The :mod:`pynusmv.utils` module contains some secondary functions and classes</span>
 <span class="sd">used by PyNuSMV internals.</span>
 
 <span class="sd">&quot;&quot;&quot;</span>
 
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s">&#39;PointerWrapper&#39;</span><span class="p">,</span> <span class="s">&#39;fixpoint&#39;</span><span class="p">,</span> <span class="s">&#39;update&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PointerWrapper&#39;</span><span class="p">,</span> <span class="s1">&#39;fixpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="s1">&#39;StdioFile&#39;</span><span class="p">,</span><span class="s1">&#39;writeonly&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;indexed&#39;</span><span class="p">]</span>
 
-
+<span class="kn">from</span> <span class="nn">pynusmv.nusmv.utils</span> <span class="kn">import</span> <span class="n">utils</span>
 <span class="kn">from</span> <span class="nn">pynusmv.init</span> <span class="kn">import</span> <span class="n">_register_wrapper</span>
 
 
-<div class="viewcode-block" id="PointerWrapper"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.utils.PointerWrapper">[docs]</a><span class="k">class</span> <span class="nc">PointerWrapper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="PointerWrapper"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.PointerWrapper">[docs]</a><span class="k">class</span> <span class="nc">PointerWrapper</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Superclass wrapper for NuSMV pointers.</span>
@@ -102,9 +103,9 @@
 
     <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freeit</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_free</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_free</span><span class="p">()</span></div>
 
-</div>
+
 <span class="k">class</span> <span class="nc">AttributeDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -118,7 +119,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span> <span class="o">=</span> <span class="bp">self</span>
 
 
-<div class="viewcode-block" id="fixpoint"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.utils.fixpoint">[docs]</a><span class="k">def</span> <span class="nf">fixpoint</span><span class="p">(</span><span class="n">funct</span><span class="p">,</span> <span class="n">start</span><span class="p">):</span>
+<div class="viewcode-block" id="fixpoint"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.fixpoint">[docs]</a><span class="k">def</span> <span class="nf">fixpoint</span><span class="p">(</span><span class="n">funct</span><span class="p">,</span> <span class="n">start</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Return the fixpoint of `funct`, as a BDD, starting with `start` BDD.</span>
 
@@ -136,10 +137,10 @@
     <span class="k">while</span> <span class="n">old</span> <span class="o">!=</span> <span class="n">new</span><span class="p">:</span>
         <span class="n">old</span> <span class="o">=</span> <span class="n">new</span>
         <span class="n">new</span> <span class="o">=</span> <span class="n">funct</span><span class="p">(</span><span class="n">old</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">old</span>
+    <span class="k">return</span> <span class="n">old</span></div>
 
-</div>
-<div class="viewcode-block" id="update"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.utils.update">[docs]</a><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
+
+<div class="viewcode-block" id="update"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.update">[docs]</a><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="n">old</span><span class="p">,</span> <span class="n">new</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Update `old` with `new`. `old` is assumed to have the `extend` or `update`</span>
 <span class="sd">    method, and `new` is assumed to be a good argument for the corresponding</span>
@@ -153,14 +154,535 @@
         <span class="n">old</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">new</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
         <span class="n">old</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">new</span><span class="p">)</span></div>
+        
+        
+<div class="viewcode-block" id="StdioFile"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.StdioFile">[docs]</a><span class="k">class</span> <span class="nc">StdioFile</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Wrapper class that provides a context manager to access a FILE* whenever the</span>
+<span class="sd">    lower interface needs one. This makes for a more pythonic way to interact </span>
+<span class="sd">    with APIs that need a standard file handle without having to deal with the </span>
+<span class="sd">    low level open/close instructions. Example::</span>
+<span class="sd">    </span>
+<span class="sd">        # opens an arbitrary file of your choice.</span>
+<span class="sd">        with StdioFile.for_name(&#39;my_output_file&#39;, &#39;w&#39;) as f: </span>
+<span class="sd">            lower_interface_do_something_smart(f)</span>
+<span class="sd">        </span>
+<span class="sd">    This wrapper also gives you access to stdin, stdout and stderr which, are </span>
+<span class="sd">    never closed despite the fact that they may be used with a `with` statement::</span>
+<span class="sd">    </span>
+<span class="sd">        # stdio is ALREADY open at this time</span>
+<span class="sd">        with StdioFile.stdout() as out:</span>
+<span class="sd">            lower_interface_do_something_smart(out)</span>
+<span class="sd">        # stdio is STILL open here</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fname</span><span class="p">,</span> <span class="n">mode</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new instance that will open the file `fname` in the `mode`</span>
+<span class="sd">        mode.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fname: the name of the file to be opened (more info -&gt; stdio.h)</span>
+<span class="sd">        :param  mode: the mode in which to open the file (more info -&gt; stdio.h)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fname</span>     <span class="o">=</span> <span class="n">fname</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mode</span>      <span class="o">=</span> <span class="n">mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span>       <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_isspecial</span> <span class="o">=</span> <span class="bp">False</span>
+        
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="StdioFile.for_name"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.StdioFile.for_name">[docs]</a>    <span class="k">def</span> <span class="nf">for_name</span><span class="p">(</span><span class="n">fname</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;w&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This function acts like a generic factory that either return a handle</span>
+<span class="sd">        for standard file if the name is specified or to stdin or stdout if the</span>
+<span class="sd">        name is not specified (it depends on the mode)</span>
+<span class="sd">        </span>
+<span class="sd">        :return: a stdiofile for the given name or stdin/stdout if no name is </span>
+<span class="sd">                 specified depending on the value of the mode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fname</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">StdioFile</span><span class="o">.</span><span class="n">stdin</span><span class="p">()</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;r&quot;</span> <span class="k">else</span> <span class="n">StdioFile</span><span class="o">.</span><span class="n">stdout</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">StdioFile</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">mode</span><span class="p">)</span></div>
+        
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="StdioFile.stdin"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.StdioFile.stdin">[docs]</a>    <span class="k">def</span> <span class="nf">stdin</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;Standard input&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">StdioFile</span><span class="p">(</span><span class="s2">&quot;(standard input)&quot;</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">stdio_stdin</span><span class="p">()</span> 
+        <span class="n">ret</span><span class="o">.</span><span class="n">_isspecial</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="StdioFile.stdout"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.StdioFile.stdout">[docs]</a>    <span class="k">def</span> <span class="nf">stdout</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;standard output&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">StdioFile</span><span class="p">(</span><span class="s2">&quot;(standard output)&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">stdio_stdout</span><span class="p">()</span> 
+        <span class="n">ret</span><span class="o">.</span><span class="n">_isspecial</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="StdioFile.stderr"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.StdioFile.stderr">[docs]</a>    <span class="k">def</span> <span class="nf">stderr</span><span class="p">():</span>
+        <span class="sd">&quot;&quot;&quot;standard error&quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="n">StdioFile</span><span class="p">(</span><span class="s2">&quot;(standard error)&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span>
+        <span class="n">ret</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">stdio_stderr</span><span class="p">()</span> 
+        <span class="n">ret</span><span class="o">.</span><span class="n">_isspecial</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">return</span> <span class="n">ret</span></div>
+        
+         
+    <span class="k">def</span> <span class="nf">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Opens the file&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isspecial</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">stdio_fopen</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mode</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exception_type</span><span class="p">,</span> <span class="n">exception_value</span><span class="p">,</span> <span class="n">trace</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Makes sure the file is closed&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isspecial</span><span class="p">:</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">stdio_fclose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span> <span class="o">=</span> <span class="bp">None</span>
+            
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;:return: a FILE* handle to the opened stream&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ptr</span></div>
+    
+<span class="c1">#===============================================================================</span>
+<span class="c1">#====== Decorators =============================================================</span>
+<span class="c1">#===============================================================================</span>
+    
+<div class="viewcode-block" id="writeonly"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.writeonly">[docs]</a><span class="k">class</span> <span class="nc">writeonly</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    writeonly provides a write only decorator for properties that do not</span>
+<span class="sd">    have a getter accessor. This makes for pythonic property-lik APIs where your</span>
+<span class="sd">    class defines should have defined a setter. Example::</span>
+<span class="sd">    </span>
+<span class="sd">        class Dummy(PointerWrapper):</span>
+<span class="sd">          # .. code elided ...</span>
+<span class="sd">          </span>
+<span class="sd">          @writeonly</span>
+<span class="sd">          def config_tweak(self, new_value_of_tweak): </span>
+<span class="sd">            lower_interface_set_tweak(self._ptr, new_value_of_tweak)</span>
+<span class="sd">            </span>
+<span class="sd">    Can be used the following way::</span>
+<span class="sd">    </span>
+<span class="sd">        d = Dummy()</span>
+<span class="sd">        # this is now perfectly OK</span>
+<span class="sd">        d.config_tweak = 42</span>
+<span class="sd">        </span>
+<span class="sd">        # this will however fail since no getter was defined</span>
+<span class="sd">        d.config_tweak</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creates the decorator memeorizing the decorated func&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fn</span>     <span class="o">=</span> <span class="n">fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span> <span class="c1"># be nice with the user documentation</span>
+        
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the decoration (takes care itself to apply the decorated fn</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span>
+    
+    <span class="k">def</span> <span class="nf">__set__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Executes the decorated setter function</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fn</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__get__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">_type</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Makes sure this property is only accessed in write only mode</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;{} is defined as a write only property&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_fn</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+ 
+<div class="viewcode-block" id="indexed"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.indexed">[docs]</a><span class="k">class</span> <span class="nc">indexed</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    indexed provides a set of decorators that enable the use of &#39;pythonic&#39; indexed</span>
+<span class="sd">    get/setters. These give you the possibility to automagically add syntax sugar </span>
+<span class="sd">    to the classes you write. </span>
+<span class="sd">    </span>
+<span class="sd">    The easiest (and most flexible way) to get started with the indexed series</span>
+<span class="sd">    of decorator is to use `@indexed.property(&lt;name&gt;)`. But if you are after</span>
+<span class="sd">    something more limited, you might want to give a look to the other decorators</span>
+<span class="sd">    that are provided: namely, `@indexed.getter`, `@indexed.setter` and </span>
+<span class="sd">    `@indexed.deleter`.  </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a new indexed callback instance configured to use `fget` as</span>
+<span class="sd">        indexed getter, `fset` as indexed setter and where args[0] is a reference</span>
+<span class="sd">        to the target object to which the get/set function are going to be </span>
+<span class="sd">        directed to.</span>
+<span class="sd">        </span>
+<span class="sd">        :param target: the receiver object who will receive the indexed messages</span>
+<span class="sd">           translated with the getter, setter, deleter functions</span>
+<span class="sd">        :param fget: the &#39;getter&#39; function (the one to call to __getitem__)</span>
+<span class="sd">        :param fset: the &#39;setter&#39; function (the one to call to __setitem__)</span>
+<span class="sd">        :param fdel: the &#39;deleter&#39; function(the one to call to __delitem__)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targ</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get</span>  <span class="o">=</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare_fget</span><span class="p">(</span><span class="n">fget</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set</span>  <span class="o">=</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare_fset</span><span class="p">(</span><span class="n">fset</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_del</span>  <span class="o">=</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare_fdel</span><span class="p">(</span><span class="n">fdel</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        performs the key based lookup using the configured getter</span>
+<span class="sd">        :param key: the key to use as &#39;lookup&#39; key</span>
+<span class="sd">        :return: the output of target.getter(key)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targ</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        performs the key based assignment of value to the key-th variable</span>
+<span class="sd">        :param key: the key to use as &#39;lookup&#39; key</span>
+<span class="sd">        :param value: the value to give to whatever corresponds to key in the </span>
+<span class="sd">               underlying structure.</span>
+<span class="sd">        :return: whatever target.setter(key, value) returns (more than likely,</span>
+<span class="sd">               it should be None)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targ</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        performs the key based suppression using the configured deleter function</span>
+<span class="sd">        :param key: the key to use as &#39;deletion&#39; key</span>
+<span class="sd">        :return: whatever target.deleter(key) returns (more than likely,</span>
+<span class="sd">               it should be None)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_del</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targ</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__wrap</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        wraps the given function into a runtime property that can be accessed</span>
+<span class="sd">        in an indexed way. </span>
+<span class="sd">        </span>
+<span class="sd">        ..:note:</span>
+<span class="sd">         </span>
+<span class="sd">            This method is private and should not be used from the outside.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fget: the &#39;getter&#39; function (the one to call to __getitem__)</span>
+<span class="sd">        :param fset: the &#39;setter&#39; function (the one to call to __setitem__)</span>
+<span class="sd">        :param fdel: the &#39;deleter&#39; function(the one to call to __delitem__)</span>
+<span class="sd">        :param doc: the docstring to set to the returned property</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">wrap</span> <span class="o">=</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">indexed</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fget</span><span class="o">=</span><span class="n">fget</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="n">fdel</span><span class="p">)</span>
+        <span class="n">wrap</span><span class="o">.</span><span class="n">doc</span> <span class="o">=</span> <span class="n">doc</span>
+        <span class="k">return</span> <span class="nb">property</span><span class="p">(</span><span class="n">wrap</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__prepare_fget</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepares the fget function from the given fn.</span>
+<span class="sd">        </span>
+<span class="sd">        This function returns the raw code to be executed for fget. If the given</span>
+<span class="sd">        `fn` is an indexed instance (ie. because the getter has been decorated), </span>
+<span class="sd">        then it is undecorated and the _get function is returned. If the obtained</span>
+<span class="sd">        callable is a method (not a function), then its __fun__ attribute is </span>
+<span class="sd">        returned in order to avoid weird behaviors (case where the given self is</span>
+<span class="sd">        actually of the right type, albeit not the expected behavior)</span>
+<span class="sd">        </span>
+<span class="sd">        .. :note:</span>
+<span class="sd">         </span>
+<span class="sd">            This method is private and should not be used from the outside.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the getter &#39;function&#39;</span>
+<span class="sd">        :return: the raw getter code   </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">_get</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">indexed</span><span class="p">)</span> <span class="k">else</span> <span class="n">fn</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__prepare_fset</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepares the fset function from the given fn.</span>
+<span class="sd">        </span>
+<span class="sd">        This function returns the raw code to be executed for fset. If the given</span>
+<span class="sd">        `fn` is an indexed instance (ie. because the setter has been decorated), </span>
+<span class="sd">        then it is undecorated and the _set function is returned. If the obtained</span>
+<span class="sd">        callable is a method (not a function), then its __fun__ attribute is </span>
+<span class="sd">        returned in order to avoid weird behaviors (case where the given self is</span>
+<span class="sd">        actually of the right type, albeit not the expected behavior)</span>
+<span class="sd">        </span>
+<span class="sd">        .. :note:</span>
+<span class="sd">         </span>
+<span class="sd">            This method is private and should not be used from the outside.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the setter &#39;function&#39;</span>
+<span class="sd">        :return: the raw setter code   </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">_set</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">indexed</span><span class="p">)</span> <span class="k">else</span> <span class="n">fn</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__prepare_fdel</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prepares the fdel function from the given fn.</span>
+<span class="sd">        </span>
+<span class="sd">        This function returns the raw code to be executed for fdel. If the given</span>
+<span class="sd">        `fn` is an indexed instance (ie. because the deleter has been decorated), </span>
+<span class="sd">        then it is undecorated and the _del function is returned. If the obtained</span>
+<span class="sd">        callable is a method (not a function), then its __fun__ attribute is </span>
+<span class="sd">        returned in order to avoid weird behaviors (case where the given self is</span>
+<span class="sd">        actually of the right type, albeit not the expected behavior)</span>
+<span class="sd">        </span>
+<span class="sd">        .. :note: </span>
+<span class="sd">        </span>
+<span class="sd">            This method is private and should not be used from the outside.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the deleter &#39;function&#39;</span>
+<span class="sd">        :return: the raw deleter code   </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__prepare</span><span class="p">(</span><span class="n">fn</span><span class="o">.</span><span class="n">_del</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="n">indexed</span><span class="p">)</span> <span class="k">else</span> <span class="n">fn</span><span class="p">)</span>
+    
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__prepare</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the raw code of the given `fn`.</span>
+<span class="sd">        </span>
+<span class="sd">        If `fn` is a method (not a function), then its __fun__ attribute is </span>
+<span class="sd">        returned in order to avoid weird behaviors (case where the given self is</span>
+<span class="sd">        actually of the right type, albeit not the expected behavior) otherwise</span>
+<span class="sd">        `fn` is returned as is.</span>
+<span class="sd">        </span>
+<span class="sd">        .. note:: This method is private and should not be used from the outside.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the function to prepare. (fn is assumed not to be an indexed)</span>
+<span class="sd">        :return: the raw code of the given `fn`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">fn</span><span class="o">.</span><span class="n">__func__</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">fn</span><span class="p">,</span> <span class="s1">&#39;__func__&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">fn</span>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="indexed.getter"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.indexed.getter">[docs]</a>    <span class="k">def</span> <span class="nf">getter</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wraps a function `fn` and turns it into  pythonic indexed-like acessor.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the function to use to perform the keyed-lookup</span>
+<span class="sd">        </span>
+<span class="sd">        Example usage::</span>
+<span class="sd">        </span>
+<span class="sd">            class GetterOnly: </span>
+<span class="sd">                # ... code elided ...</span>
+<span class="sd">                </span>
+<span class="sd">                # using @indexed or @indexed.getter is perfectly equivalent although</span>
+<span class="sd">                # the use of @indexed.getter is considered slightly cleaner</span>
+<span class="sd">                @indexed.getter</span>
+<span class="sd">                def clause(self, index):</span>
+<span class="sd">                  return lower_interface_get_clause_at(self._ptr, index)</span>
+<span class="sd">                  </span>
+<span class="sd">            # example of use: </span>
+<span class="sd">            g = GetterOnly()</span>
+<span class="sd">            g.clause[42] # returns the 42th clause</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__wrap</span><span class="p">(</span><span class="n">fget</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="indexed.setter"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.indexed.setter">[docs]</a>    <span class="k">def</span> <span class="nf">setter</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        wraps a function `fn` and turns it into  pythonic indexed-like acessor.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the function to use to perform the keyed-assignment</span>
+<span class="sd">        </span>
+<span class="sd">        Example usage::</span>
+<span class="sd">        </span>
+<span class="sd">            class SetterOnly: </span>
+<span class="sd">                # ... code elided ...</span>
+<span class="sd">                </span>
+<span class="sd">                @indexed.setter</span>
+<span class="sd">                def clause(self, index, new_value):</span>
+<span class="sd">                  lower_interface_set_clause_at(self._ptr, index, new_value)</span>
+<span class="sd">                  </span>
+<span class="sd">            # example of use: </span>
+<span class="sd">            s = GetterOnly()</span>
+<span class="sd">            s.clause[42] = another_clause # changes the value of the clause</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__wrap</span><span class="p">(</span><span class="n">fset</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="indexed.deleter"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.indexed.deleter">[docs]</a>    <span class="k">def</span> <span class="nf">deleter</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        wraps a function `fn` and turns it into  pythonic indexed-like deleter.</span>
+<span class="sd">        </span>
+<span class="sd">        :param fn: the function to use to perform the keyed-lookup</span>
+<span class="sd">        </span>
+<span class="sd">        Example usage::</span>
+<span class="sd">        </span>
+<span class="sd">            class DeleterOnly:</span>
+<span class="sd">                # ... code elided ...</span>
+<span class="sd">                </span>
+<span class="sd">                @indexed.deleter</span>
+<span class="sd">                def clause(self, index, new_value):</span>
+<span class="sd">                  return lower_interface_delete_clause_at(self._ptr, index)</span>
+<span class="sd">                  </span>
+<span class="sd">            # example of use: </span>
+<span class="sd">            d = DeleterOnly()</span>
+<span class="sd">            del d.clause[42] # 42th clause has been deleted</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">indexed</span><span class="o">.</span><span class="n">__wrap</span><span class="p">(</span><span class="n">fdel</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">doc</span><span class="o">=</span><span class="n">fn</span><span class="o">.</span><span class="n">__doc__</span><span class="p">)</span></div>
+    
+    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="indexed.property"><a class="viewcode-back" href="../../pynusmv.html#pynusmv.fsm.indexed.property">[docs]</a>    <span class="k">def</span> <span class="nf">property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wraps the constructor of the decorated class to add a virtual indexed </span>
+<span class="sd">        property called `name`</span>
+<span class="sd">        </span>
+<span class="sd">        By **default**, the generated indexed getter, indexed setter and </span>
+<span class="sd">        indexed deleted are assumed to be called respectively: </span>
+<span class="sd">        </span>
+<span class="sd">            - get_`name`</span>
+<span class="sd">            - set_`name`</span>
+<span class="sd">            - del_`name`</span>
+<span class="sd">            </span>
+<span class="sd">        However, these names are not enforced and can be customized if you pass the</span>
+<span class="sd">        keywords fget=&lt;the_name_of_your_getter_fn&gt;, fset=&lt;the_name_of_your_setter_fn&gt;</span>
+<span class="sd">        and/or fdel=&lt;the_name_of_your_deleter_fn&gt;.</span>
+<span class="sd">        </span>
+<span class="sd">        .. note:: The keyword parameters also let you provide a docstring for </span>
+<span class="sd">                  the virtual property you define. To this end, simply use the </span>
+<span class="sd">                  `doc` keyword.</span>
+<span class="sd">        </span>
+<span class="sd">        .. warning:: The getter, setter and deleter functions MUST BE CALLABLE </span>
+<span class="sd">                     objects ! This means, you MAY NOT decorate any of the </span>
+<span class="sd">                     functions you intend to use in your virtual property with  </span>
+<span class="sd">                     any of the @property, @indexed.getter, @indexed.setter or  </span>
+<span class="sd">                     @indexed.deleter since you resulting property would simply </span>
+<span class="sd">                     not work.</span>
+<span class="sd">        </span>
+<span class="sd">        Simple example::</span>
+<span class="sd">            </span>
+<span class="sd">            @indexed.property(&#39;smartlst&#39;)</span>
+<span class="sd">            class Cls:</span>
+<span class="sd">                def __init__(self):</span>
+<span class="sd">                    self._lst  = [4,5,6]</span>
+<span class="sd">                    </span>
+<span class="sd">                def get_smartlst(self, idx): </span>
+<span class="sd">                    return self._lst[idx]</span>
+<span class="sd">                    </span>
+<span class="sd">                def set_smartlst(self, idx, v):</span>
+<span class="sd">                    self._lst[idx] = v</span>
+<span class="sd">                    </span>
+<span class="sd">                def del_smartlst(self, idx):</span>
+<span class="sd">                    del self._lst[idx]</span>
+<span class="sd">                </span>
+<span class="sd">            # Usage:</span>
+<span class="sd">            c = Cls()</span>
+<span class="sd">            c.smartlst[1]     # calls _get_smartlst and returns 5</span>
+<span class="sd">            c.smartlst[1]=42  # calls _set_smartlst and changes _slt to be [4,42,6]</span>
+<span class="sd">            del c.smartlst[1] # calls _del_smartlst and changes _slt to be [4, 6]</span>
+<span class="sd">        </span>
+<span class="sd">        Example with custom property names::</span>
+<span class="sd">        </span>
+<span class="sd">            @indexed.property(&#39;smartlst&#39;, fget=&#39;glst&#39;, fset=&#39;slst&#39;, fdel=&#39;dlst&#39;)</span>
+<span class="sd">            class Cls:</span>
+<span class="sd">                def __init__(self):</span>
+<span class="sd">                    self._lst  = [4,5,6]</span>
+<span class="sd">                    </span>
+<span class="sd">                def glst(self, idx): </span>
+<span class="sd">                    return self._lst[idx]</span>
+<span class="sd">                    </span>
+<span class="sd">                def slst(self, idx, v):</span>
+<span class="sd">                    self._lst[idx] = v</span>
+<span class="sd">                    </span>
+<span class="sd">                def dlst(self, idx):</span>
+<span class="sd">                    del self._lst[idx]</span>
+<span class="sd">                </span>
+<span class="sd">            # Usage:</span>
+<span class="sd">            c = Cls()</span>
+<span class="sd">            c.smartlst[1]     # calls glst and returns 5</span>
+<span class="sd">            c.smartlst[1]=42  # calls slst and changes _slt to be [4,42,6]</span>
+<span class="sd">            del c.smartlst[1] # calls dlst and changes _slt to be [4, 6]</span>
+<span class="sd">            </span>
+<span class="sd">        If you don&#39;t like to use the decorator &#39;magic&#39; but still want to define</span>
+<span class="sd">        a virtual property with very little effort: you should then use the </span>
+<span class="sd">        indexed constructor itself as such:: </span>
+<span class="sd">        </span>
+<span class="sd">            class Dummy:</span>
+<span class="sd">                def __init__(self):</span>
+<span class="sd">                    self.clause= indexed(self, fget=self.get_clause, fset=self.set_clause,fdel=self.del_clause)</span>
+<span class="sd">                    </span>
+<span class="sd">                @indexed.getter</span>
+<span class="sd">                def get_clause(self, clause_idx): </span>
+<span class="sd">                    return lower_interface_get_clause_at(self._ptr, index)</span>
+<span class="sd">                </span>
+<span class="sd">                @indexed.setter</span>
+<span class="sd">                def set_clause(self, clause_idx, value):</span>
+<span class="sd">                    lower_interface_set_clause_at(self._ptr, index, new_value)</span>
+<span class="sd">                    </span>
+<span class="sd">                @indexed.deleter</span>
+<span class="sd">                def del_clause(self, clause_idx):</span>
+<span class="sd">                    lower_interface_delete_clause_at(self._ptr, index)</span>
+<span class="sd">            </span>
+<span class="sd">            # example of use: </span>
+<span class="sd">            d = Dummy()</span>
+<span class="sd">            d.clause[42]                # returns the 42th clause</span>
+<span class="sd">            d.clause[42] = other_clause # updates the 42th clause</span>
+<span class="sd">            del d.clause[42]            # drops the 42th clause</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">def</span> <span class="nf">decorate_init</span><span class="p">(</span><span class="n">init</span><span class="p">,</span> <span class="n">fget</span><span class="p">,</span> <span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Internal function used to decorate the __init__ method of the decorated</span>
+<span class="sd">            class. </span>
+<span class="sd">            </span>
+<span class="sd">            .. note:: You should may not use this function for yourself</span>
+<span class="sd">            </span>
+<span class="sd">            :param init: the __init__ method to decorate</span>
+<span class="sd">            :param fget: the function to use as indexed getter in the virtual prop</span>
+<span class="sd">            :param fset: the function to use as indexed setter in the virtual prop</span>
+<span class="sd">            :param fdel: the function to use as indexed deleter in the virtual prop</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="k">def</span> <span class="nf">decorated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw2</span><span class="p">):</span>
+                <span class="sd">&quot;&quot;&quot;The function that will be used instead of `init`&quot;&quot;&quot;</span>
+                <span class="n">init</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kw2</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">indexed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fget</span><span class="o">=</span><span class="n">fget</span><span class="p">,</span> <span class="n">fset</span><span class="o">=</span><span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="o">=</span><span class="n">fdel</span><span class="p">)</span>
+                
+                <span class="c1"># set the docstring of the virtual property</span>
+                <span class="k">if</span> <span class="s1">&#39;doc&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;doc&#39;</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span> 
+                    <span class="bp">self</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">__doc__</span> <span class="o">=</span> <span class="s2">&quot;Virtual indexed property&quot;</span>
+            <span class="k">return</span> <span class="n">decorated</span>
+        
+        <span class="k">def</span> <span class="nf">class_deco</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Function that actually decorates the given `cls` class.</span>
+<span class="sd">            :param cls: the class being decorated.</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+            <span class="n">_dict</span><span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">__dict__</span>
+            <span class="n">fget</span> <span class="o">=</span> <span class="bp">None</span> 
+            <span class="n">fset</span> <span class="o">=</span> <span class="bp">None</span> 
+            <span class="n">fdel</span> <span class="o">=</span> <span class="bp">None</span>
+            
+            <span class="c1"># default settings</span>
+            <span class="k">if</span> <span class="s1">&#39;get_&#39;</span><span class="o">+</span><span class="n">name</span> <span class="ow">in</span> <span class="n">_dict</span><span class="p">:</span>
+                <span class="n">fget</span> <span class="o">=</span> <span class="n">_dict</span><span class="p">[</span><span class="s1">&#39;get_&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;set_&#39;</span><span class="o">+</span><span class="n">name</span> <span class="ow">in</span> <span class="n">_dict</span><span class="p">:</span>
+                <span class="n">fset</span> <span class="o">=</span> <span class="n">_dict</span><span class="p">[</span><span class="s1">&#39;set_&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;del_&#39;</span><span class="o">+</span><span class="n">name</span> <span class="ow">in</span> <span class="n">_dict</span><span class="p">:</span>
+                <span class="n">fdel</span> <span class="o">=</span> <span class="n">_dict</span><span class="p">[</span><span class="s1">&#39;del_&#39;</span><span class="o">+</span><span class="n">name</span><span class="p">]</span>
+            
+            <span class="c1"># override default settings</span>
+            <span class="k">if</span> <span class="s1">&#39;fget&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">fget</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;fget&#39;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="s1">&#39;fset&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">fset</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;fset&#39;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="s1">&#39;fdel&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="n">fdel</span> <span class="o">=</span> <span class="n">cls</span><span class="o">.</span><span class="n">__dict__</span><span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;fdel&#39;</span><span class="p">]]</span>
+            
+            <span class="n">cls</span><span class="o">.</span><span class="n">__init__</span> <span class="o">=</span> <span class="n">decorate_init</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">__init__</span><span class="p">,</span> <span class="n">fget</span><span class="p">,</span> <span class="n">fset</span><span class="p">,</span> <span class="n">fdel</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">cls</span>
+        
+        <span class="k">return</span> <span class="n">class_deco</span></div></div>
+    
 </pre></div>
 
           </div>
         </div>
       </div>
-      <div class="sphinxsidebar">
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
-<div id="searchbox" style="display: none">
+<div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
     <form class="search" action="../../search.html" method="get">
       <input type="text" name="q" />
@@ -168,16 +690,13 @@
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
       </div>
       <div class="clearer"></div>
     </div>
-    <div class="related">
+    <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
       <ul>
         <li class="right" style="margin-right: 10px">
@@ -186,13 +705,13 @@
         <li class="right" >
           <a href="../../py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="../../index.html">PyNuSMV 0.10 documentation</a> &raquo;</li>
-          <li><a href="../index.html" >Module code</a> &raquo;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">PyNuSMV 0.11 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" >Module code</a> &raquo;</li> 
       </ul>
     </div>
-    <div class="footer">
-        &copy; Copyright 2013-2014, Simon Busard.
-      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2.3.
+    <div class="footer" role="contentinfo">
+        &copy; Copyright 2013-2015, Simon Busard.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.
     </div>
   </body>
 </html>

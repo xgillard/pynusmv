@@ -41,7 +41,7 @@ functionalities:
 """
 
 __all__ = ['dd', 'exception', 'fsm', 'glob', 'init', 'mc', 'nusmv', 'parser',
-           'prop', 'utils', 'model', 'node']
+           'prop', 'utils', 'model', 'node', 'collections']
 
 from . import dd
 from . import fsm
@@ -54,3 +54,4 @@ from . import prop
 from . import utils
 from . import model
 from . import node
+from pynusmv import collections

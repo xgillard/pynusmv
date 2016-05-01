@@ -6,14 +6,14 @@
 #include "../../../../nusmv/nusmv-config.h"
 #include "../../../../nusmv/src/utils/defs.h"
 #include "../../../../nusmv/src/utils/object.h"
-#include "../../../../nusmv/src/trace/exec/BaseTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/BDDCompleteTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/BDDPartialTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/CompleteTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/PartialTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/SATCompleteTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/SATPartialTraceExecutor.h" 
-#include "../../../../nusmv/src/trace/exec/traceExec.h" 
+#include "../../../../nusmv/src/trace/exec/BaseTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/BDDCompleteTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/BDDPartialTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/CompleteTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/PartialTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/SATCompleteTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/SATPartialTraceExecutor.h"
+#include "../../../../nusmv/src/trace/exec/traceExec.h"
 %}
 
 %feature("autodoc", 1);
@@ -41,6 +41,14 @@ PartialTraceExecutor_ptr bddPartialTraceExecutor2partialTraceExecutor(
 CompleteTraceExecutor_ptr bddCompleteTraceExecutor2completeTraceExecutor(
                                              BDDCompleteTraceExecutor_ptr ptr) {
     return (CompleteTraceExecutor_ptr) ptr;
+}
+
+CompleteTraceExecutor_ptr SATCompleteTraceExecutor2completeTraceExecutor(SATCompleteTraceExecutor_ptr ptr){
+  return (CompleteTraceExecutor_ptr) ptr;
+}
+
+PartialTraceExecutor_ptr SATPartialTraceExecutor2partialTraceExecutor(SATPartialTraceExecutor_ptr ptr){
+  return (PartialTraceExecutor_ptr) ptr;
 }
 
 %}
