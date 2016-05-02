@@ -31,25 +31,25 @@ true     = pp.Keyword("TRUE" ).setParseAction(lambda t: retpush(ast.Constant("TR
 false    = pp.Keyword("FALSE").setParseAction(lambda t: retpush(ast.Constant("FALSE")))
 
 # unary operators
-op_not   = pp.Keyword("!")
-op_G     = pp.Keyword("[]")
-op_F     = pp.Keyword("<>")
-op_X     = pp.Keyword("()")
+op_not   = pp.Literal("!")
+op_G     = pp.Literal("[]")
+op_F     = pp.Literal("<>")
+op_X     = pp.Literal("()")
 
 # binary operators
-op_and   = pp.Keyword("&")
-op_or    = pp.Keyword("|")
-op_impl  = pp.Keyword("=>")
-op_iff   = pp.Keyword("<=>")
+op_and   = pp.Literal("&")
+op_or    = pp.Literal("|")
+op_impl  = pp.Literal("=>")
+op_iff   = pp.Literal("<=>")
 
 op_U     = pp.Keyword("U")
 op_W     = pp.Keyword("W")
 
 # misc
-ropen_   = pp.Keyword("(")
-rclose_  = pp.Keyword(")")
-sopen_   = pp.Keyword("[")
-sclose_  = pp.Keyword("]")
+ropen_   = pp.Literal("(")
+rclose_  = pp.Literal(")")
+sopen_   = pp.Literal("[")
+sclose_  = pp.Literal("]")
 
 ###############################################################################
 # Grammar rules
