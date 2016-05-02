@@ -8,16 +8,15 @@ MODULE main
 -- it could react to the mouse events.
 --
 -- To get an example, consider the following two conditions:
--- * status = inactive  ** is diagnosable (only possible when mouse up)
--- * status = active    ** is not diagnosable (hover makes it not clear)
--- * status = highlight ** is not diagnosable (could be active on hover)
+-- * status = inactive ; status = active    ** is diagnosable
+-- * status = active   ; status = highlight ** is not diagnosable (because of hover)
 --
 -- =============================================================================
 -- Here are sample commands you might want to use to learn about the diag. tool:
 -- =============================================================================
 --
--- python3 -m tools.diagnosability -s "status = inactive" ../examples/input.smv
--- python3 -m tools.diagnosability -s "status = inactive" ../examples/input.smv
+-- python3 -m tools.diagnosability -s "status = active ; status = inactive" ../examples/input.smv
+-- python3 -m tools.diagnosability -s "status = active ; status = highlight" ../examples/input.smv
 --
 -- #############################################################################
 IVAR

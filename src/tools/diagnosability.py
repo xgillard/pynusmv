@@ -8,14 +8,13 @@ from pynusmv.bmc.glob      import BmcSupport, master_be_fsm
 from pynusmv.be.expression import Be
 from pynusmv.bmc.utils     import BmcModel,                    \
                                   make_nnf_boolean_wff,        \
-                                  make_negated_nnf_boolean_wff,\
                                   generate_counter_example
 from pynusmv.sat           import SatSolverFactory,            \
                                   Polarity,                    \
                                   SatSolverResult 
 from pynusmv.trace         import Trace, TraceType
  
-def usage():
+def arguments():
     """
     Thus function takes care of setting up the machinery to parse the command
     line arguments and return an object containing the parsed args. It moreover
@@ -23,11 +22,14 @@ def usage():
     
     :return: an object containing the parsed command-line arguments.
     """
-    args = argparse.ArgumentParser()
+    args = argparse.ArgumentParser(description="""
+        This tool implements a diagnosability test verifier with SAT BMC.
+    """)
     args.add_argument("model", 
                     help="The model to load")
     args.add_argument("-s", "--spec", 
-                      help="The property whose diagnosability needs to be verified")
+                      help="The property whose diagnosability needs to be verified"+\
+                           "diagnosability condition *NEED* to be separated by a semicolon")
     args.add_argument("-k", "--bound",
                       type=int,
                       default=10,
@@ -69,7 +71,7 @@ def constraint_same_observations(offset_path1, offset_path2, length):
             constraint &= ep1.iff(ep2)
     return constraint
 
-def constraint_eventually_inconsistent_belief_states(formula, offset_path1, offset_path2, length):
+def constraint_eventually_inconsistent_belief_states(formula_nodes, offset_path1, offset_path2, length):
     """
     Generates a boolean expression representing the critical pair condition.
     That is to say, it generates a condition that verifies if it is possible that
@@ -82,8 +84,8 @@ def constraint_eventually_inconsistent_belief_states(formula, offset_path1, offs
     :return: an expression describing the 'critical pair' condition.
     """
     enc = master_be_fsm().encoding
-    yes = make_nnf_boolean_wff(formula).to_be(enc)
-    no  = make_negated_nnf_boolean_wff(formula).to_be(enc)
+    yes = make_nnf_boolean_wff(formula_nodes[0]).to_be(enc)
+    no  = make_nnf_boolean_wff(formula_nodes[1]).to_be(enc)
     
     constraint = Be.false(enc.manager)
     for time_ in range(length+1):
@@ -92,7 +94,7 @@ def constraint_eventually_inconsistent_belief_states(formula, offset_path1, offs
     return constraint
         
 
-def generate_sat_problem(formula_node, length):
+def generate_sat_problem(formula_nodes, length):
     """
     Generates a SAT problem which is satisfiable iff the given `formula` is 
     *NOT* diagnosable for the loaded model for traces of length `length`.
@@ -109,10 +111,10 @@ def generate_sat_problem(formula_node, length):
     problem = generate_path(offset_1, length) & generate_path(offset_2, length) \
             & constraint_same_observations(offset_1, offset_2, length)          \
             & constraint_eventually_inconsistent_belief_states(
-                                    formula_node, offset_1, offset_2, length)
+                                    formula_nodes, offset_1, offset_2, length)
     return problem
 
-def verify_for_size_exactly_k(formula_node, k):
+def verify_for_size_exactly_k(formula_nodes, k):
     """
     Performs the verification of the diagnosability problem for `formula_node`
     when a maximum of `k` execution steps are allowed.
@@ -123,7 +125,7 @@ def verify_for_size_exactly_k(formula_node, k):
     :return: the text 'No Violation' if no counter example could be found, 
         and a counter example when one could be identified.
     """
-    problem = generate_sat_problem(formula_node, k)
+    problem = generate_sat_problem(formula_nodes, k)
     problem_= problem.inline(True)  # remove potentially redundant information
     cnf     = problem_.to_cnf()
     
@@ -161,6 +163,30 @@ def sanitize_counter_example(cnt_ex):
                 
     return counter_ex 
 
+def mk_specs_nodes(args):
+    """
+    Creates the Nodes(:see:`pynusmv.node.Node`), that represent the diagnosability
+    condition to be verified. 
+    
+    .. note::
+        
+        The diagnosability condition *must* be expressed as a pair of boolean 
+        expression (propositional formulas) that are separated by a semicolon.
+        
+        Example::
+            
+            status = active ; status = highlighted
+            
+    :return: a tuple representing the diagnosability condition to be verified.
+        (This tuple is composed of two Nodes, which stand for the NuSMV way of
+        representing formulas)
+    """
+    splitted = args.spec.split(';')
+    if len(splitted) < 2:
+        raise ValueError("The two parts of the diagnosability condition need to be separated with a semicolon")
+    to_node = lambda x: Node.from_ptr(parse_simple_expression(x))
+    return tuple(map(to_node, splitted))
+
 def proceed(args):
     """Actually proceeds to the verification"""
     with init_nusmv():
@@ -168,14 +194,14 @@ def proceed(args):
             print(m.read())
         load(args.model)
         with BmcSupport():
-            spec = Node.from_ptr(parse_simple_expression(args.spec))
+            diagnosability_condition = mk_specs_nodes(args)
             for k in range(args.bound+1):
-                result = verify_for_size_exactly_k(spec, k) 
+                result = verify_for_size_exactly_k(diagnosability_condition, k) 
                 if "No Violation" != str(result):
-                    print("-- {} is *NOT* diagnosable for length {}".format(spec, k))
+                    print("-- {} is *NOT* diagnosable for length {}".format(diagnosability_condition, k))
                     print(sanitize_counter_example(result))
                     return
             print("-- No counter example found for executions of length <= {}".format(k))
 
 if __name__ == "__main__":
-    proceed(usage())
+    proceed(arguments())
