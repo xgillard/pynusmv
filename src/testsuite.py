@@ -44,6 +44,7 @@ from tests.pynusmv.testWff               import TestWff
 from tests.tools.bmcLTL.testParsing      import TestParsing
 from tests.tools.bmcLTL.testSemantics    import TestSemantics
 from tests.tools.bmcLTL.testGen          import TestGen
+from tests.tools.bmcLTL.testCheck        import TestCheck
 
 def suite():
     """:return: the configured test suite"""
@@ -77,6 +78,7 @@ def suite():
     suite.addTest(unittest.makeSuite(TestParsing))
     suite.addTest(unittest.makeSuite(TestSemantics))
     suite.addTest(unittest.makeSuite(TestGen))
+    suite.addTest(unittest.makeSuite(TestCheck))
     
     not_included("tools.diagnosability")
     return suite
