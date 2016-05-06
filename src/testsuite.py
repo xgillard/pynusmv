@@ -41,7 +41,9 @@ from tests.pynusmv.testTraceStep         import TestTraceStep
 from tests.pynusmv.testWriteOnly         import TestWriteOnly
 from tests.pynusmv.testWff               import TestWff
 
-# from tests.pynusmv.testBeManager import TestBeRbcManager
+from tests.tools.bmcLTL.testParsing      import TestParsing
+from tests.tools.bmcLTL.testSemantics    import TestSemantics
+from tests.tools.bmcLTL.testGen          import TestGen
 
 def suite():
     """:return: the configured test suite"""
@@ -72,7 +74,11 @@ def suite():
     suite.addTest(unittest.makeSuite(TestWriteOnly))
     suite.addTest(unittest.makeSuite(TestWff))
     
-    not_included("tools.bmcLTL.*")
+    suite.addTest(unittest.makeSuite(TestParsing))
+    suite.addTest(unittest.makeSuite(TestSemantics))
+    suite.addTest(unittest.makeSuite(TestGen))
+    
+    not_included("tools.diagnosability")
     return suite
 
 @with_warnings
@@ -84,7 +90,8 @@ def suite():
     'pynusmv/sat.py',
     'pynusmv/trace.py',
     'pynusmv/utils.py',
-    'pynusmv/wff.py')
+    'pynusmv/wff.py', 
+    'tools/bmcLTL/*')
 def run_suite():
     """Runs the configured test suite"""
     runner = unittest.TextTestRunner()

@@ -1,30 +1,19 @@
 import unittest
-
+from tests                import utils as tests
 from pynusmv.init         import init_nusmv, deinit_nusmv
-from pynusmv.glob         import load_from_string 
+from pynusmv.glob         import load 
 from pynusmv.bmc.glob     import go_bmc, bmc_exit
-from pynusmv.nusmv.cmd    import cmd as _cmd
-from pynusmv               import glob 
-from pynusmv.be.fsm        import BeFsm  
-from pynusmv.sat           import SatSolverFactory, Polarity, SatSolverResult
+from pynusmv.be.fsm       import BeFsm  
+from pynusmv.sat          import SatSolverFactory, Polarity, SatSolverResult
 
 class TestSatIncSolver(unittest.TestCase):
       
     def model(self):
-        return '''
-                MODULE main
-                VAR       v: boolean;
-                          w: boolean; 
-                INIT
-                  v = TRUE & w = FALSE;
-                TRANS
-                  next(v) = !v &
-                  next(w) = FALSE;
-                '''
+        return tests.current_directory(__file__)+"/models/flipflops_explicit_relation.smv"
 
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load(self.model())
         go_bmc()
         self.fsm = BeFsm.global_master_instance()
  

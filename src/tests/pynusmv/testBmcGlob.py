@@ -1,5 +1,5 @@
 import unittest
- 
+from tests              import utils as tests 
 from pynusmv.init       import init_nusmv, deinit_nusmv
 
 from pynusmv.glob       import (load, 
@@ -22,16 +22,7 @@ class TestBmcGlob(unittest.TestCase):
         deinit_nusmv()
     
     def model(self):
-        return """
-            MODULE main
-            VAR
-                x : boolean;
-            IVAR
-                y : boolean;
-            ASSIGN
-                init(x) := TRUE;
-                next(x) := y & x;
-        """
+        return tests.current_directory(__file__)+"/models/flipflops.smv"
     
     def test_bmc_setup(self):
         # pre conditions not satisfied

@@ -3,16 +3,11 @@ This module verifies the behavior of the BeRbcManager class
 """
 import unittest
 
+from tests                  import utils as tests
 
-import pynusmv.glob as glob
-                            
-from pynusmv.init         import init_nusmv, deinit_nusmv
-from pynusmv.glob         import load_from_string 
-from pynusmv.bmc.glob     import go_bmc, bmc_exit
-
-from pynusmv.nusmv.cmd      import cmd    as _cmd
-from pynusmv.nusmv.enc      import enc    as _enc
-from pynusmv.nusmv.enc.be   import be     as _be
+from pynusmv.init           import init_nusmv, deinit_nusmv
+from pynusmv.glob           import load_from_file 
+from pynusmv.bmc.glob       import go_bmc, bmc_exit
 
 from pynusmv.utils          import StdioFile
 from pynusmv.be.expression  import Be
@@ -29,27 +24,15 @@ class TestBeManager(unittest.TestCase):
     sole purpose of verifying that no runtime error happens when they are executed
     """
     
-    def model(self):
-        return '''
-        MODULE main
-        VAR
-          a : boolean; 
-          b : boolean;
-        ASSIGN
-          init(a) := TRUE;
-          next(a) := !a;
-          init(b) := FALSE;
-          next(b) := !b;
-        '''
-    
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/flipflops.smv")
         go_bmc()
         self.enc = BeEnc.global_singleton_instance()
         self.mgr = self.enc.manager
       
     def tearDown(self):
+        bmc_exit()
         deinit_nusmv()
  
     ###########################################################################

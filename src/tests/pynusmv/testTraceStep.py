@@ -1,7 +1,8 @@
 import unittest
 
+from tests                 import utils as tests 
 from pynusmv.init          import init_nusmv, deinit_nusmv
-from pynusmv.glob          import load_from_string,    \
+from pynusmv.glob          import load,                 \
                                   master_bool_sexp_fsm                    
 from pynusmv.parser        import parse_simple_expression
 from pynusmv.node          import Node 
@@ -12,25 +13,11 @@ from pynusmv.exception     import NuSmvIllegalTraceStateError
 class TestTraceStep(unittest.TestCase):
     
     def model(self):
-        return '''
-                MODULE main
-                VAR       v: boolean;
-                          w: boolean; 
-            
-                IVAR      i: boolean;
-                
-                FROZENVAR f: boolean;
-                
-                ASSIGN
-                    init(v) := FALSE;
-                    init(w) := TRUE;
-                    next(v) := !v;
-                    next(w) := !w;
-                '''
+        return tests.current_directory(__file__)+"/models/dummy_input_frozen.smv"
     
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load(self.model())
         
     def tearDown(self):
         deinit_nusmv()

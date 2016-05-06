@@ -3,38 +3,18 @@ This module validates the behavior of the :class:`BeVar` <pynusmv.be.encoder.BeV
 """
 
 import unittest
-
+from tests                 import utils as tests
 from pynusmv.init          import init_nusmv, deinit_nusmv
-from pynusmv.glob          import load_from_string
+from pynusmv.glob          import load_from_file
 from pynusmv.bmc.glob      import go_bmc, bmc_exit, master_be_fsm 
 from pynusmv.be.expression import Be
 from pynusmv.be.encoder    import BeWrongVarType 
 
 class TestBeVar(unittest.TestCase):
     
-    def model(self):
-        return """
-        MODULE main
-        -- this module has no special meaning, it just features all types of vars
-        
-        VAR
-            v : boolean;
-        IVAR
-            i : boolean;
-        FROZENVAR
-            f : boolean;
-        
-        ASSIGN
-            init(v) := TRUE;
-            next(v) := !v | i;
-            
-        INVAR
-            f = FALSE;
-        """
-    
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/flipflops_vif.smv")
         go_bmc()
         self.enc = master_be_fsm().encoding
         self.v   = self.enc.by_name['v']

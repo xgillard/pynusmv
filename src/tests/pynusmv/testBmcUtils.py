@@ -55,6 +55,12 @@ class TestBmcUtils(unittest.TestCase):
     def test_convert_relative_loop_to_absolute(self):
         self.assertEqual(4, bmcutils.convert_relative_loop_to_absolute( 4, 10))
         self.assertEqual(6, bmcutils.convert_relative_loop_to_absolute(-4, 10))
+        # loop and bound must be consistent (bound >= 0)
+        with self.assertRaises(ValueError):
+            bmcutils.convert_relative_loop_to_absolute(5, -2)
+        # loop and bound must be consistent (loop <= bound)
+        with self.assertRaises(ValueError):
+            bmcutils.convert_relative_loop_to_absolute(5, 2)
     
     def test_check_consistency(self):
         # when the bound is not meaningful
@@ -137,15 +143,47 @@ class TestBmcUtils(unittest.TestCase):
             
             self.assertEqual(cond, cond2)
     
+    def test_loop_condition_consistent_values(self):
+        # test case 3: only the state variables are considered
+        load_from_string(
+            """
+            MODULE main
+            IVAR    i : boolean;
+            VAR     v : boolean;
+                    w : boolean;
+            ASSIGN  init(v) := TRUE; 
+                    next(v) := !v;
+            """)
+        with BmcSupport():
+            mdl  = bmcutils.BmcModel()
+            enc  = mdl._fsm.encoding
+            # loop and bound must be consistent (bound >= 0)
+            with self.assertRaises(ValueError):
+                bmcutils.loop_condition(enc, -5, 1)
+            # loop and bound must be consistent (loop <= bound)
+            with self.assertRaises(ValueError):
+                bmcutils.loop_condition(enc, 2, 5)
+    
     def test_successor(self):
         # case where there is a loop
         self.assertEqual( 2, bmcutils.successor( 1, 10, 0))
-        self.assertEqual(10, bmcutils.successor( 9, 10, 0))
-        self.assertEqual( 0, bmcutils.successor(10, 10, 0))
+        self.assertEqual( 9, bmcutils.successor( 8, 10, 0))
+        self.assertEqual( 0, bmcutils.successor( 9, 10, 0))
         # case when there is none
         self.assertEqual( 2, bmcutils.successor( 1, 10, bmcutils.no_loopback()))
         self.assertEqual(10, bmcutils.successor( 9, 10, bmcutils.no_loopback()))
         self.assertIsNone(bmcutils.successor(10, 10, bmcutils.no_loopback()))
+        
+        # time cannot be negative
+        with self.assertRaises(ValueError):
+            bmcutils.successor(-5, 10, 0)
+        # bound cannot be negative
+        with self.assertRaises(ValueError):
+            bmcutils.successor(5, -5, 0)
+        
+        # bound and value must be consistent
+        with self.assertRaises(ValueError):
+            bmcutils.successor(5, 10, 20)
         
     def test_apply_inlining(self):
         load_from_string(

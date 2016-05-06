@@ -3,8 +3,10 @@ This module validates the behavior of the 'pynusmv.be.encoder' module
 """
 import unittest
 
+from tests import utils as tests 
+
 from pynusmv.init       import init_nusmv, deinit_nusmv
-from pynusmv.glob       import load_from_string 
+from pynusmv.glob       import load_from_file 
 from pynusmv.bmc.glob   import go_bmc, bmc_exit
 from pynusmv.be.encoder import BeEnc, BeVarType
 from pynusmv.node       import Node
@@ -12,23 +14,12 @@ from pynusmv.parser     import parse_simple_expression
 
 class TestBeEnc(unittest.TestCase):
     
-    def model(self):
-        return '''
-                MODULE main
-                VAR       v: boolean; 
-                IVAR      i: boolean;
-                FROZENVAR f: boolean;
-                ASSIGN
-                  init(v) := TRUE;
-                  next(v) := !v;
-                '''
-    
     def node_from_expr(self, expr):
         return Node.from_ptr(parse_simple_expression(expr))
     
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/flipflops_vif.smv")
         go_bmc()
         self._TESTED = BeEnc.global_singleton_instance()
 

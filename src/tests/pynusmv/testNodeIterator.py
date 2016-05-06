@@ -3,6 +3,8 @@ This module verifies the behavior of the NodeIterator
 """
 import unittest
 
+from tests                import utils as tests
+
 from pynusmv.nusmv.cmd    import cmd  as _cmd
 from pynusmv.nusmv.prop   import prop as _prop
 from pynusmv.nusmv.fsm.be import be   as _be 
@@ -14,20 +16,8 @@ from pynusmv.collections  import NodeIterator
 
 class TestNodeIterator(unittest.TestCase):
     def model(self):
-        return '''
-                MODULE main
-                VAR       v: boolean; 
-                IVAR      i: boolean;
-                FROZENVAR f: boolean;
-                ASSIGN
-                  init(v) := TRUE;
-                  next(v) := !v;
-                  
-                FAIRNESS 
-                    v = TRUE;
-                FAIRNESS
-                    i = FALSE;
-                '''
+        return tests.current_directory(__file__)+"/models/flipflops_vif_fairness.smv"
+    
     def go_bmc(self):
         _cmd.Cmd_CommandExecute("build_boolean_model")
         _cmd.Cmd_CommandExecute("bmc_setup");

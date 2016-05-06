@@ -1,5 +1,6 @@
 import unittest
 
+from tests                import utils as tests
 
 from pynusmv              import glob
 from pynusmv.init         import init_nusmv, deinit_nusmv
@@ -9,22 +10,11 @@ from pynusmv.exception    import (NuSMVNeedVariablesEncodedError,
  
 class TestBuildBooleanModel(unittest.TestCase):
     def model(self):
-        return '''
-                MODULE main
-                VAR
-                    v: boolean; 
-                INIT
-                    v = FALSE;
-                TRANS
-                    v <-> !next(v);
-                FAIRNESS 
-                    v = TRUE;
-                INVAR
-                    v = FALSE;
-                '''
+        return tests.current_directory(__file__)+"/models/flipflops_trans_invar_fairness.smv"
+    
     def setUp(self):
         init_nusmv()
-        glob.load_from_string(self.model())
+        glob.load_from_file(self.model())
 
     def tearDown(self):
         deinit_nusmv()

@@ -3,7 +3,7 @@ import unittest
 from tests import utils as tests
 
 from pynusmv.init          import init_nusmv, deinit_nusmv
-from pynusmv.glob          import load_from_string 
+from pynusmv.glob          import load_from_file
 from pynusmv.bmc.glob      import go_bmc, bmc_exit
 from pynusmv.be.expression import Be
 from pynusmv.be.fsm        import BeFsm
@@ -12,23 +12,10 @@ from pynusmv.bmc.utils     import BmcModel
 from pynusmv.utils         import StdioFile 
  
 class TestBmcModel(unittest.TestCase):
-    def model(self):
-        return '''
-                MODULE main
-                VAR
-                    v: boolean; 
-                INIT
-                    v = FALSE;
-                TRANS
-                    v <-> !next(v);
-                FAIRNESS 
-                    v = TRUE;
-                INVAR
-                    v = FALSE;
-                '''
+    
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/flipflops_trans_invar_fairness.smv")
         go_bmc()
         
         self.fsm = BeFsm.global_master_instance()

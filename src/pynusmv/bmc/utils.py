@@ -89,33 +89,6 @@ def loop_from_string(loop_text):
     
     return int(loop_text)
 
-def convert_relative_loop_to_absolute(l, k):
-    """
-    Converts a relative loop value (wich can also be an absolute loop value) 
-    to an absolute loop value.
-
-    Example::
-    
-      For example the -4 value when k is 10 is the value 6,
-      but the value 4 (absolute loop value) is still 4
-
-
-    .. note::
-    
-        No check is made to prevent you from entering inconsistent values.
-        For instance l=-12 and k=10 will get you -2 which does not mean anything
-        Similarly, l=12 and k=10 will get you 12 which should be forbidden by
-        BMC semantics.
-        
-        If you need such consistency, check :see:`check_consistency`
-
-    :param l: the relative loop value (which may actually be absolute)
-    :param k: the bound on the considered problem
-    
-    :return: the absolute value for the loop
-    """
-    return _bmc.Bmc_Utils_RelLoop2AbsLoop(l, k)
-
 def check_consistency(bound, loop):
     """
     This function raises an exception ValueError when the given bound and loop
@@ -152,6 +125,37 @@ def check_consistency(bound, loop):
        and not is_no_loopback(loop):
         raise ValueError("The bound and loop value are inconsistent")
 
+def convert_relative_loop_to_absolute(l, k):
+    """
+    Converts a relative loop value (wich can also be an absolute loop value) 
+    to an absolute loop value.
+
+    Example::
+    
+      For example the -4 value when k is 10 is the value 6,
+      but the value 4 (absolute loop value) is still 4
+
+
+    .. note::
+    
+        No check is made to prevent you from entering inconsistent values.
+        For instance l=-12 and k=10 will get you -2 which does not mean anything
+        Similarly, l=12 and k=10 will get you 12 which should be forbidden by
+        BMC semantics.
+        
+        If you need such consistency, check :see:`check_consistency`
+
+    :param l: the relative loop value (which may actually be absolute)
+    :param k: the bound on the considered problem
+    
+    :return: the absolute value for the loop
+    :raises ValueError: when the given `k` and `l` are not consistent with each 
+        other or when the bound `k` is negative.
+    """
+    check_consistency(k, l)
+    
+    return _bmc.Bmc_Utils_RelLoop2AbsLoop(l, k)
+
 def loop_condition(enc, k, l):
     """
     This function generates a Be expression representing the loop condition
@@ -172,7 +176,11 @@ def loop_condition(enc, k, l):
     :param l: the time where the loop is assumed to start
     :return: a Be expression representing the loop condition that verifies that
         k-l is a loop path.
+    :raises ValueError: when the given `k` and `l` are not consistent with each 
+        other or when the bound `k` is negative.
     """
+    check_consistency(k, l)
+    
     cond = Be.true(enc.manager)
     for v in enc.curr_variables: # for all untimed variable
         vl   = v.at_time[l].boolean_expression
@@ -182,8 +190,8 @@ def loop_condition(enc, k, l):
 
 def successor(time, k, l):
     """
-    Returns the successor time of `time` in the context of a (loopy) trace
-    on the interval [loop; bound]. 
+    Returns the successor time of `time` in the context of a (loopy) trace 
+    (k-l loop) on the interval [loop; bound].
     
     .. note::
         
@@ -191,17 +199,39 @@ def successor(time, k, l):
         then the sucessor is simply `time` + 1. If on top of that, `time` is 
         equal to `k`. Then there is no sucessor and the value None is returned.  
     
+    .. note::
+        References, see Definition 6 
+        in Biere et al - ``Bounded Model Checking'' - 2003 
+        
+    .. warning::
+        To be consistent with the way the loop condition is implemented (equiv
+        of all the state variables). In the case of a loopy path (k-l loop)
+        we have that walking 'k' steps means to be back at step 'l'. Hence, the
+        value of i can only vary from 0 to k-1 (and will repeat itself in the 
+        range [l; k-1])
+        
+    
     :param time: the time whose successor needs to be computed.
     :param k: the highest time
     :param l: the time where the loop is assumed to start
     :return: the successor of `time` in the context of a k-l loop.
+    :raises ValueError: when the `time` or the bound `k` is negative
     """
-    if time < k:
-        return time + 1
-    elif l != no_loopback():
-        return l
+    if time < 0:
+        raise ValueError("time must be a non negative integer")
+    
+    check_consistency(k, l)
+    
+    if l == no_loopback():
+        if time + 1 <= k:
+            return time+1
+        else:
+            return None
     else:
-        return None 
+        if time < k-1:
+            return time + 1
+        else:
+            return l 
 
 ###############################################################################
 # Inlining of boolean expressions
@@ -448,6 +478,7 @@ class BmcModel:
         :param i: the time index of the fragment to generate. 
         :return: a Be expression corresponding to the ith unrolling of the 
             transition relation.
+        :raise ValueError: when `i` is negative
         """
         if i < 0:
             raise ValueError("time indices start at 0")
@@ -484,6 +515,8 @@ class BmcModel:
         :raises ValueError: when the k and l parameters are incorrect (namely, when
             one says the loop must start after the problem bound).
         """
+        if k < 0:
+            raise ValueError("time (k) must be positive")
         if l >= k:
             raise ValueError("loop may not start after the problem bound hence l<k")
         return Be(_bmc.Bmc_Model_GetFairness(self._fsm._ptr, k, l), self._fsm.encoding.manager)
@@ -512,7 +545,13 @@ class BmcModel:
             property.
         :param i: the time step for which the unrolling is generated.
         :return: Trans[i-1] & Invar[i] & Property[i-1]
+        :raise ValueError: in case the given parameters are incorrect.
         """
+        if invarspec is None:
+            raise ValueError("an invarspec is expected")
+        if i < 0:
+            raise ValueError("Time must be a non negative integer")
+        
         return Be(_bmc.Bmc_Model_Invar_Dual_forward_unrolling(
                                                     self._fsm._ptr,
                                                     invarspec._ptr,
@@ -567,7 +606,21 @@ def dump_problem(be_enc, be_cnf, prop, bound, loop, dump_type, fname):
     :param dump_type: the format in which to output the data. (:see:`DumpType`)
     :param fname: a template of the name of the file where the information will
         be dumped.
+    :raise ValueError: in case the given parameters are incorrect.
     """
+    if be_enc is None:
+        raise ValueError("a boolean encoding is required")
+    if be_cnf is None:
+        raise ValueError("a boolean CNF formula is required")
+    if prop is None:
+        raise ValueError("a property node is required (must correspond to cnf)")
+    if dump_type is None:
+        raise ValueError("a dump type is required")
+    if fname is None:
+        raise ValueError("a file name is required")
+    
+    check_consistency(bound, loop)
+    
     _bmc.Bmc_Dump_WriteProblem(be_enc._ptr, 
                                be_cnf._ptr, 
                                prop._ptr, 
@@ -587,7 +640,16 @@ def print_counter_example(fsm, problem, solver, k, descr="BMC counter example"):
     :param solver: the SAT solver that identified a counter example
     :param k: the length of the generated problem (length in terms of state)
     :param descr: a description of what the generated counter example is about
+    :raises ValueError: whenever the problem or the solver is None or when the 
+        problem bound `k` is negative.
     """
+    if problem is None:
+        raise ValueError("a problem must be given")
+    if solver is None:
+        raise ValueError("a solver must be given")
+    if k < 0:
+        raise ValueError("the problem bound `k` must be non negative")
+    
     print("Property is violated for path of length {}".format(k))
     ptr = _bmc.Bmc_Utils_generate_and_print_cntexample(
             fsm.encoding._ptr, solver._as_SatSolver_ptr(),
@@ -606,7 +668,16 @@ def generate_counter_example(fsm, problem, solver, k, descr="BMC counter example
     :param solver: the SAT solver that identified a counter example
     :param k: the length of the generated problem (length in terms of state)
     :param descr: a description of what the generated counter example is about
+    :raises ValueError: whenever the problem or the solver is None or when the 
+        problem bound `k` is negative.
     """
+    if problem is None:
+        raise ValueError("a problem must be given")
+    if solver is None:
+        raise ValueError("a solver must be given")
+    if k < 0:
+        raise ValueError("the problem bound `k` must be non negative")
+    
     ptr = _bmc.Bmc_Utils_generate_cntexample(
             fsm.encoding._ptr, solver._as_SatSolver_ptr(),
             problem._ptr, k, descr,
@@ -630,7 +701,18 @@ def fill_counter_example(fsm, solver, k, trace):
     :return: `trace` but populated with the counter example extracted from the
         solver model.
     :raise NuSmvIllegalTraceStateError: if the given `trace` is not empty.
+    :raises ValueError: whenever the fsm, solver or trace is None or when the 
+        problem bound `k` is negative.
     """
+    if fsm is None:
+        raise ValueError("an fsm must be given")
+    if solver is None:
+        raise ValueError("a solver must be given")
+    if trace is None:
+        raise ValueError("a trace must be given")
+    if k < 0:
+        raise ValueError("the problem bound `k` must be non negative")
+    
     _bmc.Bmc_Utils_fill_cntexample(
             fsm.encoding._ptr, solver._as_SatSolver_ptr(), k, trace._ptr)
     return trace

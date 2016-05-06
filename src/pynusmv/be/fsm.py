@@ -135,6 +135,13 @@ class BeFsm(PointerWrapper):
     def trans(self):
         """
         The boolean expression representing the transition relation of the FSM
+        
+        .. note::
+        
+            Transition expression shifted at time zero is what brings you to 
+            state one. Hence::
+            
+                shift_to_time(init, 0) & shift_to_time(trans, 0) == STATE_1 
         """
         _expr = _be.BeFsm_get_trans(self._ptr)
         return Be(_expr, self.encoding.manager) if _expr is not None else None

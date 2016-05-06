@@ -1,12 +1,27 @@
 """
 This module contains the class definition of the different classes that may 
 compose an LTL abstract syntax tree. 
+
+.. note:: 
+    The generation of the boolean expressions corresponding to the different 
+    LTL expressions could have been done using directly the functionalities
+    provided :mod:`pynusmv.bmc.ltlspec`. However, the objective of the tool
+    implemented in :mod:`tools.bmcLTL` is to demonstrate with a simple example
+    (LTL) how one can use the bmc additions to PyNuSMV to develop verification
+    tools for new logic formalisms. Hence, the approach that was adopted in that
+    context was to *NOT* use any of the "higher level services" and develop
+    a verification tool translating "literally" the reduction of that logic to
+    a propositional SAT problem as imagined or stated in a reference paper.
+    
+    In this scope, the reference paper that was used was:
+    
+                Biere et al - ``Bounded Model Checking'' - 2003  
 """
 
 from pynusmv.be.expression import Be
 
 ###############################################################################
-# Useful to generate a problem: 
+# Utility functions: 
 ###############################################################################
 def successor(i, k, l):
     """
@@ -16,19 +31,93 @@ def successor(i, k, l):
         References, see Definition 6 
         in Biere et al - ``Bounded Model Checking'' - 2003 
         
+    .. note::
+        An other implementation of this function (w/ the same semantics) exists
+        in :mod:`pynusmv.bmc.utils`. This version is merely re-implemented to
+        1. show that it can be easily done 
+        2. stick closely to the definition given in the paper by Biere et al. 
+            (see other note)
+            
+    .. warning::
+        To be consistent with the way the loop condition is implemented (equiv
+        of all the state variables), we have that walking 'k' steps means to be
+        back at step 'l'. Hence, the value of i can only vary from 0 to k-1 
+        (and will repeat itself in the range [l; k-1]
+        
     :param i: the current time
     :param k: the maximum (horizon/bound) time of the problem
     :param l: the time where the loop starts 
     
     :return: the k-l loop successor of i
     """
-    return i+1 if i < k else l
+    return i+1 if i < k-1 else l
+
+def loop_condition(enc, k, l):
+    """
+    This function generates a Be expression representing the loop condition
+    which is necessary to determine that k->l is a backloop.
+    
+    Formally, the returned constraint is denoted _{l}L_{k}
+    
+    Because the transition relation is encoded in Nusmv as formula (and not as
+    a relation per-se), we determine the existence of a backloop between 
+    l < k and forall var, var(i) == var(k)
+     
+    That is to say: if it is possible to encounter two times the same state
+    (same state being all variables have the same value in both states) we know
+    there is a backloop on the path
+    
+    .. note::
+        An other implementation of this function (w/ the same semantics) exists
+        in :mod:`pynusmv.bmc.utils`. This version is merely re-implemented to
+        1. show that it can be easily done 
+        2. stick closely to the definition given in the paper by Biere et al. 
+            (see other note)
+        
+    
+    :param fsm: the fsm on which the condition will be evaluated
+    :param k: the highest time
+    :param l: the time where the loop is assumed to start
+    :return: a Be expression representing the loop condition that verifies that
+        k-l is a loop path.
+    """
+    cond = Be.true(enc.manager)
+    for v in enc.curr_variables: # for all untimed variable
+        vl   = v.at_time[l].boolean_expression
+        vk   = v.at_time[k].boolean_expression
+        cond = cond & ( vl.iff(vk) )
+    return cond
 
 ###############################################################################
 # Abstract ast nodes
 ###############################################################################
 class Formula:
     """An abstract base class meant to be the parent of all the AST nodes"""
+    
+    def bounded_semantics(self, enc, k):
+        """
+        Returns a boolean expression corresponding to the bounded semantics of
+        the formula denoted by `self` on a path of length k. This combines both
+        the semantics in case of a loopy path and the case of a non-loopy path.
+        
+        .. note::
+            This function takes the same approach as NuSMV and does not enforce
+            the absence of loop when using the more restrictive semantic_no_loop.
+            
+        :param enc: the encoding used to store and organize the variables (used 
+            ie to shift vars)
+        :param k: the last time that exists in the universe of this expression
+        :return: a boolean expression translating the bounded semantics of this
+            formula.
+        """
+        noloop = self.semantic_no_loop(enc, 0, k)
+        
+        w_loop = Be.false(enc.manager)
+        for l in range(k):   # [0; k-1]
+            w_loop |= (loop_condition(enc, k, l) & 
+                       self.semantic_with_loop(enc, 0, k, l))
+            
+        return noloop | w_loop
     
     def semantic_no_loop(self, enc, i, k):
         """
@@ -80,6 +169,18 @@ class Formula:
             this node when there is no loop on the path from i to k
         """
         pass
+    
+    def nnf(self, negated):
+        """
+        All nodes of the AST must implement this function. 
+        Concretely, the role of this function is to return a version of `self` 
+        that is formatted according to the Negative Normal Form.
+        
+        :param negated: a flag indicating whether or not the subformula 
+            represented by self was negated in the parent formula
+        :return: a nnf version of self
+        """
+        pass
 
 class Atomic(Formula):
     """An abstract base class representing AST of an atomic proposition""" 
@@ -116,15 +217,24 @@ class Constant(Atomic):
         else:
             return Be.false(enc.manager)
     
-    def semantic_with_loop(self, fsm, i, k, l):
-        return self.semantic_no_loop(fsm, i, k)
+    def semantic_with_loop(self, enc, i, k, l):
+        return self.semantic_no_loop(enc, i, k)
+    
+    def nnf(self, negated):
+        if not negated:
+            return self
+        else:
+            return Constant("FALSE") if self.id == "TRUE" else Constant("TRUE")
     
 class Variable(Atomic):
     def semantic_no_loop(self, enc, i, k):
         return enc.by_name[self.id].at_time[i].boolean_expression
     
-    def semantic_with_loop(self, fsm, i, k, l):
-        return self.semantic_no_loop(fsm, i, k)
+    def semantic_with_loop(self, enc, i, k, l):
+        return self.semantic_no_loop(enc, i, k)
+    
+    def nnf(self, negated):
+        return self if not negated else Not(self)
 
 class Not(Unary):
     def semantic_no_loop(self, enc, i, k):
@@ -132,6 +242,10 @@ class Not(Unary):
     
     def semantic_with_loop(self, enc, i, k, l):
         return -self.prop.semantic_with_loop(enc, i, k, l)
+    
+    def nnf(self, negated):
+        # double negation removes itself altogether
+        return self.prop.nnf(True) if not negated else self.prop.nnf(False) 
 
 class And(Binary):
     def semantic_no_loop(self, enc, i, k):
@@ -143,6 +257,13 @@ class And(Binary):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
         return lhs & rhs
+    
+    def nnf(self, negated):
+        if not negated:
+            return And(self.lhs.nnf(False), self.rhs.nnf(False))
+        else:
+            return Or(self.lhs.nnf(True), self.rhs.nnf(True))
+            
 
 class Or(Binary):
     def semantic_no_loop(self, enc, i, k):
@@ -154,6 +275,12 @@ class Or(Binary):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
         return lhs | rhs
+    
+    def nnf(self, negated):
+        if not negated:
+            return Or(self.lhs.nnf(False), self.rhs.nnf(False))
+        else:
+            return And(self.lhs.nnf(True), self.rhs.nnf(True))
         
 class Imply(Binary):
     def semantic_no_loop(self, enc, i, k):
@@ -165,6 +292,9 @@ class Imply(Binary):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
         return lhs.imply(rhs)
+    
+    def nnf(self, negated):
+        return Or(Not(self.lhs), self.rhs).nnf(negated)
 
 class Equiv(Binary):
     def semantic_no_loop(self, enc, i, k):
@@ -176,6 +306,9 @@ class Equiv(Binary):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
         return lhs.iff(rhs)
+    
+    def nnf(self, negated):
+        return And(Imply(self.lhs, self.rhs), Imply(self.rhs, self.lhs)).nnf(negated)
 
 ###############################################################################
 # LTL specific ast nodes
@@ -184,101 +317,141 @@ class Equiv(Binary):
 class Until(Binary):
     def semantic_no_loop(self, enc, i, k):
         """The semantics when there is no loop:: [[lhs U rhs]]_{bound}^{time}"""
-        # at infinity, it is false: psi MUST happen at some time
-        cond = Be.false(enc.manager)
-        for time in reversed(range(i, k+1)):
-            psi = self.rhs.semantic_no_loop(enc, time, k)
-            phi = self.lhs.semantic_no_loop(enc, time, k)
-            cond = psi | (phi & cond)
-        return cond
+        # k is not infinity when there is no loop
+        if i > k:
+            return Be.false(enc.manager)
+        
+        psi = self.rhs.semantic_no_loop(enc, i, k)  
+        phi = self.lhs.semantic_no_loop(enc, i, k)  
+        return psi | (phi & self.semantic_no_loop(enc, i+1, k))
 
     
     def semantic_with_loop(self, enc, i, k, l):
         """The semantics when there is a loop:: _{l}[[lhs U rhs]]_{bound}^{time}"""
-        # two cases : 
-        # - either we did not enter the loop yet and (i < l) and therefore
-        #   we enumerate i->l and then l->k
-        # - or we already entered the loop and then (l <= i <= k) and therefore
-        #   it suffices to enumerate from l to k
-        #
-        # Note, for the sake of making a finite iterative process, we proceed
-        # backwards and enumerate from k to start
-        start = min(i, l)
-        # at infinity, it is false: psi MUST happen at some time
-        cond = Be.false(enc.manager)
-        for time in reversed(range(start, k+1)):
-            psi = self.rhs.semantic_with_loop(enc, time, k, l)
-            phi = self.lhs.semantic_with_loop(enc, time, k, l)
-            cond = psi | (phi & cond)
-        return cond
+        # without moving at least one step, it is impossible to go through a loop
+        if k == 0: 
+            return Be.false(enc.manager)
+        
+        def _semantic(time, cnt):
+            """auxiliary function to stop recursing after k steps"""
+            # at infinity, it is false: psi MUST happen at some time
+            if cnt == k:
+                return Be.false(enc.manager)
+            psi = self.rhs.semantic_with_loop(enc, time, k, l)  
+            phi = self.lhs.semantic_with_loop(enc, time, k, l)  
+            return psi | (phi & _semantic(successor(time, k, l), cnt+1))
+        
+        return _semantic(i, 0)
+    
+    def nnf(self, negated):
+        if not negated:
+            return Until(self.lhs.nnf(False), self.rhs.nnf(False))
+        else:
+            # pseudo duality rule
+            phi = self.lhs.nnf(True)
+            psi = self.rhs.nnf(True)
+            return WeakUntil(psi, And(phi, psi))
 
 class WeakUntil(Binary):
     def semantic_no_loop(self, enc, i, k):
         """The semantics when there is no loop:: [[lhs W rhs]]_{bound}^{time}"""
-        # at infinity, it is true: psi may never happen but k IS NOT INFINITY
-        cond = Be.false(enc.manager)
-        for time in reversed(range(i, k+1)):
-            psi = self.rhs.semantic_no_loop(enc, time, k)
-            phi = self.lhs.semantic_no_loop(enc, time, k)
-            cond = psi | (phi & cond)
-        return cond
+        # k is not infinity when there is no loop
+        if i > k:
+            return Be.false(enc.manager)
+        
+        psi = self.rhs.semantic_no_loop(enc, i, k)  
+        phi = self.lhs.semantic_no_loop(enc, i, k)  
+        return psi | (phi & self.semantic_no_loop(enc, i+1, k))
     
     def semantic_with_loop(self, enc, i, k, l):
         """The semantics when there is a loop:: _{l}[[lhs W rhs]]_{bound}^{time}"""
-        # two cases : 
-        # - either we did not enter the loop yet and (i < l) and therefore
-        #   we enumerate i->l and then l->k
-        # - or we already entered the loop and then (l <= i <= k) and therefore
-        #   it suffices to enumerate from l to k
-        #
-        # Note, for the sake of making a finite iterative process, we proceed
-        # backwards and enumerate from k to start
-        start = min(i, l)
-        # at infinity, it is true: psi may never happen (in a loop there is 
-        # potentially infinite behavior)
-        cond = Be.true(enc.manager)
-        for time in reversed(range(start, k+1)):
-            psi = self.rhs.semantic_with_loop(enc, time, k, l)
-            phi = self.lhs.semantic_with_loop(enc, time, k, l)
-            cond = psi | (phi & cond)
-        return cond
+        # without moving at least one step, it is impossible to go through a loop
+        if k == 0: 
+            return Be.false(enc.manager)
+        
+        def _semantic(time, cnt):
+            """auxiliary function to stop recursing after k steps"""
+            # at infinity, it is true: psi is not forced if []phi
+            if cnt == k:
+                return Be.true(enc.manager)
+            psi = self.rhs.semantic_with_loop(enc, time, k, l)  
+            phi = self.lhs.semantic_with_loop(enc, time, k, l)  
+            return psi | (phi & _semantic(successor(time, k, l), cnt+1))
+        
+        return _semantic(i, 0)
+    
+    def nnf(self, negated):
+        if not negated:
+            return WeakUntil(self.lhs.nnf(False), self.rhs.nnf(False))
+        else:
+            # pseudo duality rule
+            phi = self.lhs.nnf(True)
+            psi = self.rhs.nnf(True)
+            return Until(psi, And(phi, psi))
 
 class Globally(Unary):
     def semantic_no_loop(self, enc, i, k):
         return Be.false(enc.manager)
     
     def semantic_with_loop(self, enc, i, k, l):
-        start = min(i, l)
-        cond  = Be.true(enc.manager) # neutral for the conjunction operator 
-        for time in reversed(range(start, k+1)):
-            cond = cond & self.prop.semantic_with_loop(enc, time, k, l)
-        return cond
+        # without moving at least one step, it is impossible to go through a loop
+        if k == 0: 
+            return Be.false(enc.manager)
+        
+        def _semantic(time, cnt):
+            if cnt == k:
+                return Be.true(enc.manager)
+            now = self.prop.semantic_with_loop(enc, time, k, l)
+            return now & _semantic(successor(time, k, l), cnt+1)
+        
+        return _semantic(i, 0)
+    
+    def nnf(self, negated):
+        if not negated:
+            return Globally(self.prop.nnf(False))
+        else:
+            return Eventually(self.prop.nnf(True))
 
 class Eventually(Unary):
     def semantic_no_loop(self, enc, i, k):
-        cond  = Be.false(enc.manager) 
-        for time in reversed(range(i, k+1)):
-            cond = cond | self.prop.semantic_no_loop(enc, time, k)
-        return cond
+        if i > k:
+            return Be.false(enc.manager)
+        
+        now = self.prop.semantic_no_loop(enc, i, k)
+        return now | self.semantic_no_loop(enc, i+1, k)
 
     def semantic_with_loop(self, enc, i, k, l):
-        start = min(i, l)
-        cond  = Be.false(enc.manager) 
-        for time in reversed(range(start, k+1)):
-            cond = cond | self.prop.semantic_with_loop(enc, time, k, l)
-        return cond
+        # without moving at least one step, it is impossible to go through a loop
+        if k == 0: 
+            return Be.false(enc.manager)
+        
+        def _semantic(time, cnt):
+            if cnt == k:
+                return Be.false(enc.manager)
+            now = self.prop.semantic_with_loop(enc, time, k, l)
+            return now | _semantic(successor(time, k, l), cnt+1)
+        return _semantic(i, 0)
+    
+    def nnf(self, negated):
+        if not negated:
+            return Eventually(self.prop.nnf(False))
+        else:
+            return Globally(self.prop.nnf(True))
 
 class Next(Unary):
     def semantic_no_loop(self, enc, i, k):
-        if i == k+1:
+        if i >= k:
             return Be.false(enc.manager)
         else: 
             return self.prop.semantic_no_loop(enc, i+1, k)
 
     def semantic_with_loop(self, enc, i, k, l):
-        if i == k+1:
+        # without moving at least one step, it is impossible to go through a loop
+        if k == 0: 
             return Be.false(enc.manager)
-        else: 
-            return self.prop.semantic_with_loop(enc, successor(i, k, l), k, l)
         
+        return self.prop.semantic_with_loop(enc, successor(i, k, l), k, l)
+        
+    def nnf(self, negated):
+        return Next(self.prop.nnf(negated))
         

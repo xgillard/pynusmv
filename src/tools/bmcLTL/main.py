@@ -6,10 +6,11 @@ the Linear Temporal Logic (LTL) implemented using the PyNuSMV library.
 import sys
 import argparse
 
-from pynusmv.init       import init_nusmv
-from pynusmv.glob       import load
-from pynusmv.bmc.glob   import BmcSupport
-from tools.bmcLTL.check import check_ltl 
+from pynusmv.init         import init_nusmv
+from pynusmv.glob         import load
+from pynusmv.bmc.glob     import BmcSupport
+from tools.bmcLTL.parsing import parseLTL
+from tools.bmcLTL.check   import check_ltl 
 
 def arguments():
     """
@@ -26,7 +27,11 @@ def arguments():
 
 def check(formula, args):
     try:
-        check_ltl(formula.strip(), args.bound)
+        parsed_fml          = parseLTL(formula.strip())
+        status,length,trace = check_ltl(parsed_fml, args.bound)
+        if status != 'Ok':
+            print("-- {} for length {}".format(status, length))
+            print(trace)
     except Exception as e:
         print("The specification contains a syntax error")
         print(e)

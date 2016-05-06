@@ -5,7 +5,7 @@ import unittest
 from tests                 import utils as tests
 
 from pynusmv.init          import init_nusmv, deinit_nusmv
-from pynusmv.glob          import load_from_string, prop_database
+from pynusmv.glob          import load_from_file, prop_database
 from pynusmv.parser        import parse_ltl_spec
 from pynusmv.node          import Node
 from pynusmv.utils         import StdioFile
@@ -21,27 +21,10 @@ from pynusmv.sat           import SatSolverFactory, Polarity, SatSolverResult
 from pynusmv.wff import Wff
 
 class TestBmcLTLSpec(unittest.TestCase):
-    
-    def model(self):
-        return """
-               MODULE main
-                VAR
-                    y : 0..15;
-                ASSIGN
-                    init(y) := 0;
-                TRANS
-                    case
-                        y = 7 : next(y) = 0;
-                        TRUE : next(y) = ((y + 1) mod 16);
-                    esac
-                
-                LTLSPEC
-                    G ( y <= 7 )
-               """
-    
+
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/dummy_ltlspecs.smv")
         go_bmc()
         self.fsm = master_be_fsm()
         

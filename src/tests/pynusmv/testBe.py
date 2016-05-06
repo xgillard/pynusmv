@@ -1,30 +1,19 @@
 import unittest
 
-# from tests import utils as tests
+from tests                 import utils as tests
 
 from pynusmv.init          import init_nusmv, deinit_nusmv
 from pynusmv.bmc.glob      import go_bmc, bmc_exit
 from pynusmv               import glob 
 from pynusmv.be.fsm        import BeFsm  
 from pynusmv.be.expression import Be
-from pynusmv.sat import Polarity
+from pynusmv.sat           import Polarity
+
 class TestBe(unittest.TestCase):
       
-    def model(self):
-        return '''
-                MODULE main
-                VAR       v: boolean;
-                          w: boolean; 
-                INIT
-                  v = TRUE & w = FALSE;
-                TRANS
-                  next(v) = !v &
-                  next(w) = FALSE;
-                '''
-
     def setUp(self):
         init_nusmv()
-        glob.load(self.model())
+        glob.load(tests.current_directory(__file__)+"/models/flipflops_explicit_relation.smv")
         go_bmc()
         self._fsm = BeFsm.global_master_instance()
         self._manager = self._fsm.encoding.manager

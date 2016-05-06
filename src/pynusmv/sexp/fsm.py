@@ -156,7 +156,7 @@ class SexpFsm(PointerWrapper):
         .. note::
             
             NUSMV supports two types of fairness constraints, namely justice 
-            constraints and com- passion constraints. A justice constraint 
+            constraints and compassion constraints. A justice constraint 
             consists of a formula f, which is assumed to be true infinitely 
             often in all the fair paths. A compassion constraint consists of a 
             pair of formulas (p,q); if property p is true infinitely often in a
@@ -194,7 +194,8 @@ class SexpFsm(PointerWrapper):
         Checks INIT, INVAR, TRANS, INPUT, JUSTICE, COMPASSION to be empty 
         (ie: True Expr). In this case returns true, false otherwise
                        
-        :return: true iff this fsm is a boolean SEXP FSM
+        :return: true iff this fsm has no INIT, INVAR, TRANS, INPUT, JUSTICE or
+            COMPASSION.
         """
         return bool(_sexp.SexpFsm_is_syntactically_universal(self._as_SexpFsm_ptr()))
     

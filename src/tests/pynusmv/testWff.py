@@ -3,7 +3,7 @@ This module validates the behavior of the :class:`Wff` which serves to
 manipulate (and rewrite) formulas using the syntactic nodes of the AST.
 """
 import unittest
-
+from tests            import utils as tests 
 from pynusmv          import glob 
 from pynusmv.init     import init_nusmv, deinit_nusmv
 from pynusmv.bmc.glob import go_bmc, bmc_exit, master_be_fsm
@@ -11,29 +11,11 @@ from pynusmv.wff      import Wff
  
 class TestWff(unittest.TestCase):
     def model(self):
-        return '''
-               MODULE main
-               -- This is a double flip flop example model.
-               VAR 
-                   x : boolean;
-                   y : boolean;
-                INVAR
-                   x | y;
-                ASSIGN
-                    init(x) := TRUE;
-                    init(y) := FALSE;
-                    next(x) := !x;
-                    next(y) := !y;
-                     
-                LTLSPEC
-                    G x <-> !y
-                CTLSPEC
-                    AG x <-> !y
-               '''
+        return tests.current_directory(__file__)+"/models/flipflops_wff.smv"
         
     def setUp(self):
         init_nusmv()
-        glob.load_from_string(self.model())
+        glob.load(self.model())
         go_bmc()
         self.enc = master_be_fsm().encoding
 

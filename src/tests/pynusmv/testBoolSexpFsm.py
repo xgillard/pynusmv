@@ -3,43 +3,17 @@ This module validates the behavior of the BoolSexpFsm class (and by extension,
 that of the SexpFsm class).
 """
 import unittest
-
+from tests            import utils as tests 
 from pynusmv          import glob 
 from pynusmv.init     import init_nusmv, deinit_nusmv
 from pynusmv.bmc      import glob as bmcGlob 
-from pynusmv.node import FlatHierarchy
+from pynusmv.node     import FlatHierarchy
  
 class TestBoolSexpFsm(unittest.TestCase):
-    def model(self):
-        return '''
-                MODULE main
-                VAR
-                    v: boolean; 
-                    w: boolean;
-                IVAR 
-                    x : boolean;
-                INIT
-                    v = (FALSE);
-                TRANS
-                    v <-> !next(v) | x;
-                FAIRNESS 
-                    v = TRUE;
-                INVAR
-                    v = FALSE;
-                LTLSPEC
-                    -- this is false but ok....
-                    F G v
-                
-                DEFINE
-                    maybe := TRUE | FALSE;
-                
-                JUSTICE 
-                    TRUE;
-                '''
-        
+    
     def setUp(self):
         init_nusmv()
-        glob.load_from_string(self.model())
+        glob.load_from_file(tests.current_directory(__file__)+"/models/dummy_define_justice.smv")
         bmcGlob.go_bmc()
         self.fsm = glob.master_bool_sexp_fsm()
 

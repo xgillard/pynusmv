@@ -5,43 +5,19 @@ import unittest
 from tests                 import utils as tests
 
 from pynusmv.init          import init_nusmv, deinit_nusmv
-from pynusmv.glob          import load_from_string, prop_database
-from pynusmv.parser        import simple_expression
-from pynusmv.node          import Node
+from pynusmv.glob          import load_from_file, prop_database
 from pynusmv.utils         import StdioFile
 
-from pynusmv.be.expression import Be 
 from pynusmv.bmc.glob      import go_bmc, bmc_exit, master_be_fsm
 from pynusmv.bmc           import invarspec 
 from pynusmv.bmc           import utils 
 from pynusmv.bmc.utils     import DumpType , BmcModel
 
-from pynusmv.sat           import SatSolverFactory, Polarity, SatSolverResult
-
-from pynusmv.wff import Wff
-
 class TestBmcInvarSpec(unittest.TestCase):
-    
-    def model(self):
-        return """
-               MODULE main
-                VAR x: boolean;
-                    y: boolean;
-                ASSIGN
-                    init(x) := FALSE;
-                    init(y) := TRUE;
-                    next(x) := !x;
-                    next(y) := !y;
-                
-                -- is valid
-                INVARSPEC x <-> !y
-                -- not valid
-                INVARSPEC x <->  y
-               """
     
     def setUp(self):
         init_nusmv()
-        load_from_string(self.model())
+        load_from_file(tests.current_directory(__file__)+"/models/dummy_invarspecs.smv")
         go_bmc()
         self.fsm = master_be_fsm()
         
