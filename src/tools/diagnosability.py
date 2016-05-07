@@ -71,13 +71,13 @@ def constraint_same_observations(offset_path1, offset_path2, length):
             constraint &= ep1.iff(ep2)
     return constraint
 
-def constraint_eventually_inconsistent_belief_states(formula_nodes, offset_path1, offset_path2, length):
+def constraint_eventually_critical_pair(formula_nodes, offset_path1, offset_path2, length):
     """
     Generates a boolean expression representing the critical pair condition.
     That is to say, it generates a condition that verifies if it is possible that
     the two belief states are inconsistent wrt `formula`.
     
-    :param formula: the formula whose diagnosability is verified.
+    :param formula_nodes: the formula whose diagnosability is verified.
     :param offset_path1: the offset at which path 1 is supposed to start (should be 0)
     :param offset_path2: the offset at which path 2 is supposed to start (must not intersect with path1)
     :param length: the length of the path
@@ -110,7 +110,7 @@ def generate_sat_problem(formula_nodes, length):
     
     problem = generate_path(offset_1, length) & generate_path(offset_2, length) \
             & constraint_same_observations(offset_1, offset_2, length)          \
-            & constraint_eventually_inconsistent_belief_states(
+            & constraint_eventually_critical_pair(
                                     formula_nodes, offset_1, offset_2, length)
     return problem
 

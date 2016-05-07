@@ -15,36 +15,38 @@ import unittest
 
 from testsuiteutils import not_included, with_coverage, with_warnings
 
-from tests.pynusmv.testAssoc             import TestAssoc
-from tests.pynusmv.testBe                import TestBe
-from tests.pynusmv.testBeCnf             import TestBeCnf
-from tests.pynusmv.testBeEnc             import TestBeEnc
-from tests.pynusmv.testBeFsm             import TestBeFsm
-from tests.pynusmv.testBeManager         import TestBeManager
-from tests.pynusmv.testBeVar             import TestBeVar
-from tests.pynusmv.testBmcGlob           import TestBmcGlob
-from tests.pynusmv.testBmcInvarSpec      import TestBmcInvarSpec
-from tests.pynusmv.testBmcLTLspec        import TestBmcLTLSpec
-from tests.pynusmv.testBmcModel          import TestBmcModel
-from tests.pynusmv.testBmcUtils          import TestBmcUtils
-from tests.pynusmv.testBoolSexpFsm       import TestBoolSexpFsm
-from tests.pynusmv.testBuildBooleanModel import TestBuildBooleanModel
-from tests.pynusmv.testIndexed           import TestIndexed
-from tests.pynusmv.testNodeIterator      import TestNodeIterator
-from tests.pynusmv.testNodeList          import TestNodeList
-from tests.pynusmv.testSatSolver         import TestSatSolver
-from tests.pynusmv.testSatIncSolver      import TestSatIncSolver
-from tests.pynusmv.testSatSolverFactory  import TestSatSolverFactory
-from tests.pynusmv.testSlist             import TestSlist
-from tests.pynusmv.testTrace             import TestTrace
-from tests.pynusmv.testTraceStep         import TestTraceStep
-from tests.pynusmv.testWriteOnly         import TestWriteOnly
-from tests.pynusmv.testWff               import TestWff
+from tests.pynusmv.testAssoc                       import TestAssoc
+from tests.pynusmv.testBe                          import TestBe
+from tests.pynusmv.testBeCnf                       import TestBeCnf
+from tests.pynusmv.testBeEnc                       import TestBeEnc
+from tests.pynusmv.testBeFsm                       import TestBeFsm
+from tests.pynusmv.testBeManager                   import TestBeManager
+from tests.pynusmv.testBeVar                       import TestBeVar
+from tests.pynusmv.testBmcGlob                     import TestBmcGlob
+from tests.pynusmv.testBmcInvarSpec                import TestBmcInvarSpec
+from tests.pynusmv.testBmcLTLspec                  import TestBmcLTLSpec
+from tests.pynusmv.testBmcModel                    import TestBmcModel
+from tests.pynusmv.testBmcUtils                    import TestBmcUtils
+from tests.pynusmv.testBoolSexpFsm                 import TestBoolSexpFsm
+from tests.pynusmv.testBuildBooleanModel           import TestBuildBooleanModel
+from tests.pynusmv.testIndexed                     import TestIndexed
+from tests.pynusmv.testNodeIterator                import TestNodeIterator
+from tests.pynusmv.testNodeList                    import TestNodeList
+from tests.pynusmv.testSatSolver                   import TestSatSolver
+from tests.pynusmv.testSatIncSolver                import TestSatIncSolver
+from tests.pynusmv.testSatSolverFactory            import TestSatSolverFactory
+from tests.pynusmv.testSlist                       import TestSlist
+from tests.pynusmv.testTrace                       import TestTrace
+from tests.pynusmv.testTraceStep                   import TestTraceStep
+from tests.pynusmv.testWriteOnly                   import TestWriteOnly
+from tests.pynusmv.testWff                         import TestWff
+                                                   
+from tests.tools.bmcLTL.testParsing                import TestParsing
+from tests.tools.bmcLTL.testSemantics              import TestSemantics
+from tests.tools.bmcLTL.testGen                    import TestGen
+from tests.tools.bmcLTL.testCheck                  import TestCheck
 
-from tests.tools.bmcLTL.testParsing      import TestParsing
-from tests.tools.bmcLTL.testSemantics    import TestSemantics
-from tests.tools.bmcLTL.testGen          import TestGen
-from tests.tools.bmcLTL.testCheck        import TestCheck
+from tests.tools.diagnosability.testDiagnosability import TestDiagnosability
 
 def suite():
     """:return: the configured test suite"""
@@ -80,7 +82,7 @@ def suite():
     suite.addTest(unittest.makeSuite(TestGen))
     suite.addTest(unittest.makeSuite(TestCheck))
     
-    not_included("tools.diagnosability")
+    suite.addTest(unittest.makeSuite(TestDiagnosability))
     return suite
 
 @with_warnings
@@ -93,7 +95,8 @@ def suite():
     'pynusmv/trace.py',
     'pynusmv/utils.py',
     'pynusmv/wff.py', 
-    'tools/bmcLTL/*')
+    'tools/bmcLTL/*',
+    'tools/diagnosability.py')
 def run_suite():
     """Runs the configured test suite"""
     runner = unittest.TextTestRunner()
