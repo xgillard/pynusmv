@@ -5,6 +5,10 @@ that makes the writing/reading of test cases clearer and easier to track.
 import os
 import sys
 
+from pynusmv.init      import init_nusmv, deinit_nusmv
+from pynusmv.glob      import load_from_file, master_bool_sexp_fsm
+from pynusmv.bmc.glob  import go_bmc, master_be_fsm, bmc_exit
+
 def todo(fn):
     """
     A decorator to tell a test was foreseen but not implemented
@@ -54,4 +58,38 @@ def current_directory(what):
     :return: the cwd
     """
     return os.path.dirname(os.path.realpath(what))
+
+class Configure:
+    """
+    This class provides a convenient context manager to initialize BMC test 
+    cases loading the model from a file and setting the most commonly used
+    fields in the testcase
+    """
+    
+    def __init__(self, testcase, location, model):
+        """
+        creates a new instance
+        :param testcase: the test case to initialize
+        :param location: the __file__ attribute of the module in which the 
+            testcase runs
+        :param model: a path relative to the testcase module from where to load
+            an smv model.
+        """
+        self.testcase = testcase
+        self.model    = current_directory(location)+model
+        
+    def __enter__(self):
+        """Performs what one would usually do in setUp"""
+        init_nusmv()
+        load_from_file(self.model)
+        go_bmc()
+        self.testcase.sexpfsm = master_bool_sexp_fsm()
+        self.testcase.befsm   = master_be_fsm()
+        self.testcase.enc     = self.testcase.befsm.encoding
+        self.testcase.mgr     = self.testcase.enc.manager
+    
+    def __exit__(self, type_, value, traceback):
+        """Performs what one would usually do in tearDown"""
+        bmc_exit()
+        deinit_nusmv()
     

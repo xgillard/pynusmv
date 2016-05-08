@@ -2,10 +2,11 @@ import unittest
 
 from tests import utils as tests
 
-from pynusmv.init         import init_nusmv, deinit_nusmv
-from pynusmv.glob         import load_from_file 
-from pynusmv.bmc.glob     import go_bmc, bmc_exit
-from pynusmv.be.fsm       import BeFsm
+from pynusmv.init           import init_nusmv, deinit_nusmv
+from pynusmv.glob           import load_from_file 
+from pynusmv.bmc.glob       import go_bmc, bmc_exit
+from pynusmv.be.fsm         import BeFsm
+from pynusmv.be.expression  import Be
  
 class TestBeFsm(unittest.TestCase):
     def model(self):
@@ -65,7 +66,12 @@ class TestBeFsm(unittest.TestCase):
 
     def test_fairness_list(self):
         self.assertEqual(1, len(self._TESTED.fairness_list))   
-        # the contained constraint is returned as an AST node.
+        # returned items are boolean expressions
+        fairness = self._TESTED.fairness_list[0]
+        # manually recoding v = True
+        v        = self._TESTED.encoding.by_name['v'].boolean_expression
+        manual   = Be.true(self._TESTED.encoding.manager).iff(v)
+        self.assertEqual(fairness, manual)
 
     def test_fairness_iterator(self):
         lst = [ f for f in self._TESTED.fairness_iterator() ]

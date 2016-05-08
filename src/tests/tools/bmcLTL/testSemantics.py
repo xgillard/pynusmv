@@ -101,7 +101,7 @@ class TestSemantics(TestCase):
         self.assertEqual(Be.false(self.mgr), expr.semantic_with_loop(self.enc, 0, 5, 2))
         
     def test_variable_noloop(self):
-        expr = ast.Variable("a")
+        expr = ast.Proposition("a")
         self.assertEqual(
                 self.enc.by_name['a'].at_time[3].boolean_expression, 
                 expr.semantic_no_loop(self.enc, 3, 5))
@@ -113,7 +113,7 @@ class TestSemantics(TestCase):
     def test_variable_withloop(self):
         # bound and loop have no impact on the way BE for a variable is 
         # generated (successor index not enforced)
-        expr = ast.Variable("a")
+        expr = ast.Proposition("a")
         self.assertEqual(
                 self.enc.by_name['a'].at_time[3].boolean_expression, 
                 expr.semantic_with_loop(self.enc, 3, 5, 2))
@@ -129,26 +129,26 @@ class TestSemantics(TestCase):
             expr.semantic_no_loop(self.enc, 2, 3))
         
         # variable
-        expr = ast.Not(ast.Variable("a"))
+        expr = ast.Not(ast.Proposition("a"))
         self.assertEqual(
-            -ast.Variable("a").semantic_no_loop(self.enc, 2, 3),
+            -ast.Proposition("a").semantic_no_loop(self.enc, 2, 3),
             expr.semantic_no_loop(self.enc, 2, 3))
         
         # not
-        expr = ast.Not(ast.Not(ast.Variable("a")))
+        expr = ast.Not(ast.Not(ast.Proposition("a")))
         self.assertEqual(
-            ast.Variable("a").semantic_no_loop(self.enc, 2, 3),
+            ast.Proposition("a").semantic_no_loop(self.enc, 2, 3),
             expr.semantic_no_loop(self.enc, 2, 3))
         
         # expression: and
-        expr = ast.Not(ast.And(ast.Variable("a"), ast.Variable("b")))
+        expr = ast.Not(ast.And(ast.Proposition("a"), ast.Proposition("b")))
         self.assertEqual(
-            -( ast.Variable("a").semantic_no_loop(self.enc, 2, 3) 
-             & ast.Variable("b").semantic_no_loop(self.enc, 2, 3)),
+            -( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3) 
+             & ast.Proposition("b").semantic_no_loop(self.enc, 2, 3)),
             expr.semantic_no_loop(self.enc, 2, 3))
         
         # expression: weak until
-        expr = ast.WeakUntil(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.WeakUntil(ast.Proposition("a"), ast.Proposition("b"))
         nega = ast.Not(expr)
         self.assertEqual(
             -expr.semantic_no_loop(self.enc, 2, 3),
@@ -162,140 +162,166 @@ class TestSemantics(TestCase):
             expr.semantic_with_loop(self.enc, 2, 3, 1))
         
         # variable
-        expr = ast.Not(ast.Variable("a"))
+        expr = ast.Not(ast.Proposition("a"))
         self.assertEqual(
-            -ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1),
+            -ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1),
             expr.semantic_with_loop(self.enc, 2, 3, 1))
         
         # not
-        expr = ast.Not(ast.Not(ast.Variable("a")))
+        expr = ast.Not(ast.Not(ast.Proposition("a")))
         self.assertEqual(
-            ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1),
+            ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1),
             expr.semantic_with_loop(self.enc, 2, 3, 1))
         
         # expression: and
-        expr = ast.Not(ast.And(ast.Variable("a"), ast.Variable("b")))
+        expr = ast.Not(ast.And(ast.Proposition("a"), ast.Proposition("b")))
         self.assertEqual(
-            -( ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1) 
-             & ast.Variable("b").semantic_with_loop(self.enc, 2, 3, 1)),
+            -( ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1) 
+             & ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1)),
             expr.semantic_with_loop(self.enc, 2, 3, 1))
         
         # expression: weak until
-        expr = ast.WeakUntil(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.WeakUntil(ast.Proposition("a"), ast.Proposition("b"))
         nega = ast.Not(expr)
         self.assertEqual(
             -expr.semantic_with_loop(self.enc, 2, 3, 1),
              nega.semantic_with_loop(self.enc, 2, 3, 1))
         
     def test_and_noloop(self):
-        expr = ast.And(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.And(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_no_loop(self.enc, 2, 3)
-                & ast.Variable("b").semantic_no_loop(self.enc, 2, 3)),
+                ( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3)
+                & ast.Proposition("b").semantic_no_loop(self.enc, 2, 3)),
                 expr.semantic_no_loop(self.enc, 2, 3))
         
-        expr = ast.And(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.And(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_no_loop(self.enc, 2, 3)
-                & ast.Eventually(ast.Variable("b")).semantic_no_loop(self.enc, 2, 3)),
+                ( ast.Globally(ast.Proposition("a")).semantic_no_loop(self.enc, 2, 3)
+                & ast.Eventually(ast.Proposition("b")).semantic_no_loop(self.enc, 2, 3)),
                 expr.semantic_no_loop(self.enc, 2, 3))
     
     def test_and_with_loop(self):
-        expr = ast.And(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.And(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1)
-                & ast.Variable("b").semantic_with_loop(self.enc, 2, 3, 1)),
+                ( ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1)
+                & ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
-        expr = ast.And(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.And(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_with_loop(self.enc, 2, 3, 1)
-                & ast.Eventually(ast.Variable("b")).semantic_with_loop(self.enc, 2, 3, 1)),
+                ( ast.Globally(ast.Proposition("a")).semantic_with_loop(self.enc, 2, 3, 1)
+                & ast.Eventually(ast.Proposition("b")).semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
         
     def test_or_noloop(self):
-        expr = ast.Or(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Or(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_no_loop(self.enc, 2, 3)
-                | ast.Variable("b").semantic_no_loop(self.enc, 2, 3)),
+                ( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3)
+                | ast.Proposition("b").semantic_no_loop(self.enc, 2, 3)),
                 expr.semantic_no_loop(self.enc, 2, 3))
         
-        expr = ast.Or(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Or(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_no_loop(self.enc, 2, 3)
-                | ast.Eventually(ast.Variable("b")).semantic_no_loop(self.enc, 2, 3)),
+                ( ast.Globally(ast.Proposition("a")).semantic_no_loop(self.enc, 2, 3)
+                | ast.Eventually(ast.Proposition("b")).semantic_no_loop(self.enc, 2, 3)),
                 expr.semantic_no_loop(self.enc, 2, 3))
     
     def test_or_with_loop(self):
-        expr = ast.Or(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Or(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1)
-                | ast.Variable("b").semantic_with_loop(self.enc, 2, 3, 1)),
+                ( ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1)
+                | ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
-        expr = ast.Or(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Or(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_with_loop(self.enc, 2, 3, 1)
-                | ast.Eventually(ast.Variable("b")).semantic_with_loop(self.enc, 2, 3, 1)),
+                ( ast.Globally(ast.Proposition("a")).semantic_with_loop(self.enc, 2, 3, 1)
+                | ast.Eventually(ast.Proposition("b")).semantic_with_loop(self.enc, 2, 3, 1)),
+                expr.semantic_with_loop(self.enc, 2, 3, 1))
+        
+    def test_xor_noloop(self):
+        expr = ast.Xor(ast.Proposition("a"), ast.Proposition("b"))
+        self.assertEqual(
+                ( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3)
+                ^ ast.Proposition("b").semantic_no_loop(self.enc, 2, 3)),
+                expr.semantic_no_loop(self.enc, 2, 3))
+        
+        expr = ast.Xor(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
+        self.assertEqual(
+                ( ast.Globally(ast.Proposition("a")).semantic_no_loop(self.enc, 2, 3)
+                ^ ast.Eventually(ast.Proposition("b")).semantic_no_loop(self.enc, 2, 3)),
+                expr.semantic_no_loop(self.enc, 2, 3))
+    
+    def test_xor_with_loop(self):
+        expr = ast.Xor(ast.Proposition("a"), ast.Proposition("b"))
+        self.assertEqual(
+                ( ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1)
+                ^ ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1)),
+                expr.semantic_with_loop(self.enc, 2, 3, 1))
+        
+        expr = ast.Xor(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
+        self.assertEqual(
+                ( ast.Globally(ast.Proposition("a")).semantic_with_loop(self.enc, 2, 3, 1)
+                ^ ast.Eventually(ast.Proposition("b")).semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
     def test_imply_noloop(self):
-        expr = ast.Imply(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Imply(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_no_loop(self.enc, 2, 3).imply(
-                  ast.Variable("b").semantic_no_loop(self.enc, 2, 3))),
+                ( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3).imply(
+                  ast.Proposition("b").semantic_no_loop(self.enc, 2, 3))),
                 expr.semantic_no_loop(self.enc, 2, 3))
         
-        expr = ast.Imply(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Imply(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                (-ast.Globally(ast.Variable("a")).semantic_no_loop(self.enc, 2, 3)
-                | ast.Eventually(ast.Variable("b")).semantic_no_loop(self.enc, 2, 3)),
+                (-ast.Globally(ast.Proposition("a")).semantic_no_loop(self.enc, 2, 3)
+                | ast.Eventually(ast.Proposition("b")).semantic_no_loop(self.enc, 2, 3)),
                 expr.semantic_no_loop(self.enc, 2, 3))
     
     def test_imply_with_loop(self):
-        expr = ast.Imply(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Imply(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                (-ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1)
-                | ast.Variable("b").semantic_with_loop(self.enc, 2, 3, 1)),
+                (-ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1)
+                | ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
-        expr = ast.Imply(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Imply(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                (-ast.Globally(ast.Variable("a")).semantic_with_loop(self.enc, 2, 3, 1)
-                | ast.Eventually(ast.Variable("b")).semantic_with_loop(self.enc, 2, 3, 1)),
+                (-ast.Globally(ast.Proposition("a")).semantic_with_loop(self.enc, 2, 3, 1)
+                | ast.Eventually(ast.Proposition("b")).semantic_with_loop(self.enc, 2, 3, 1)),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
     def test_iff_noloop(self):
-        expr = ast.Equiv(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Equiv(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_no_loop(self.enc, 2, 3).iff(
-                  ast.Variable("b").semantic_no_loop(self.enc, 2, 3))),
+                ( ast.Proposition("a").semantic_no_loop(self.enc, 2, 3).iff(
+                  ast.Proposition("b").semantic_no_loop(self.enc, 2, 3))),
                 expr.semantic_no_loop(self.enc, 2, 3))
         
-        expr = ast.Equiv(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Equiv(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_no_loop(self.enc, 2, 3).iff(
-                  ast.Eventually(ast.Variable("b")).semantic_no_loop(self.enc, 2, 3))),
+                ( ast.Globally(ast.Proposition("a")).semantic_no_loop(self.enc, 2, 3).iff(
+                  ast.Eventually(ast.Proposition("b")).semantic_no_loop(self.enc, 2, 3))),
                 expr.semantic_no_loop(self.enc, 2, 3))
         
     def test_iff_with_loop(self):
-        expr = ast.Equiv(ast.Variable("a"), ast.Variable("b"))
+        expr = ast.Equiv(ast.Proposition("a"), ast.Proposition("b"))
         self.assertEqual(
-                ( ast.Variable("a").semantic_with_loop(self.enc, 2, 3, 1).iff(
-                  ast.Variable("b").semantic_with_loop(self.enc, 2, 3, 1))),
+                ( ast.Proposition("a").semantic_with_loop(self.enc, 2, 3, 1).iff(
+                  ast.Proposition("b").semantic_with_loop(self.enc, 2, 3, 1))),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
-        expr = ast.Equiv(ast.Globally(ast.Variable("a")), ast.Eventually(ast.Variable("b")))
+        expr = ast.Equiv(ast.Globally(ast.Proposition("a")), ast.Eventually(ast.Proposition("b")))
         self.assertEqual(
-                ( ast.Globally(ast.Variable("a")).semantic_with_loop(self.enc, 2, 3, 1).iff(
-                  ast.Eventually(ast.Variable("b")).semantic_with_loop(self.enc, 2, 3, 1))),
+                ( ast.Globally(ast.Proposition("a")).semantic_with_loop(self.enc, 2, 3, 1).iff(
+                  ast.Eventually(ast.Proposition("b")).semantic_with_loop(self.enc, 2, 3, 1))),
                 expr.semantic_with_loop(self.enc, 2, 3, 1))
         
     def test_until_noloop(self):
         enc  = self.enc
-        a    = ast.Variable("a")
-        b    = ast.Variable("b")
+        a    = ast.Proposition("a")
+        b    = ast.Proposition("b")
 
         expr = ast.Until(a, b)
         tool = expr.semantic_no_loop(enc, 0, 2)
@@ -319,8 +345,8 @@ class TestSemantics(TestCase):
     def test_until_with_loop(self):
         enc  = self.enc
         i,k,l= 0,2,0
-        a    = ast.Variable("a")
-        b    = ast.Variable("b")
+        a    = ast.Proposition("a")
+        b    = ast.Proposition("b")
 
         expr = ast.Until(a, b)
         tool = expr.semantic_with_loop(enc, i,k,l)
@@ -345,8 +371,8 @@ class TestSemantics(TestCase):
         
     def test_weak_until_noloop(self):
         enc  = self.enc
-        a    = ast.Variable("a")
-        b    = ast.Variable("b")
+        a    = ast.Proposition("a")
+        b    = ast.Proposition("b")
 
         expr = ast.WeakUntil(a, b)
         tool = expr.semantic_no_loop(enc, 0, 2)
@@ -371,8 +397,8 @@ class TestSemantics(TestCase):
         enc  = self.enc
         mgr  = enc.manager
         i,k,l= 0,2,0
-        a    = ast.Variable("a")
-        b    = ast.Variable("b")
+        a    = ast.Proposition("a")
+        b    = ast.Proposition("b")
 
         expr = ast.WeakUntil(a, b)
         tool = expr.semantic_with_loop(enc, i,k,l)
@@ -394,7 +420,7 @@ class TestSemantics(TestCase):
         i,k     = 0,2
         enc     = self.enc
         mgr     = enc.manager
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Globally(a)
         
         tool = formula.semantic_no_loop(enc, i, k)
@@ -403,7 +429,7 @@ class TestSemantics(TestCase):
     def test_globally_with_loop(self):
         i,k,l   = 0,2,0
         enc     = self.enc
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Globally(a)
         tool    = formula.semantic_with_loop(enc, i, k, l) &\
                     bmcutils.loop_condition(enc, k, l)
@@ -426,7 +452,7 @@ class TestSemantics(TestCase):
     def test_eventually_no_loop(self):
         i,k     = 0,2
         enc     = self.enc
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Eventually(a)
         
         tool    = formula.semantic_no_loop(enc, i, k)
@@ -451,7 +477,7 @@ class TestSemantics(TestCase):
     def test_eventually_with_loop(self):
         i,k,l   = 0,2,0
         enc     = self.enc
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Eventually(a)
         
         tool    = formula.semantic_with_loop(enc, i, k, l)
@@ -477,7 +503,7 @@ class TestSemantics(TestCase):
         i,k     = 0,2
         enc     = self.enc
         # One step
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Next(a)
         tool    = formula.semantic_no_loop(enc, i, k)
         manual  = a.semantic_no_loop(enc, 1, k)
@@ -530,7 +556,7 @@ class TestSemantics(TestCase):
         enc     = self.enc
         
         # One step
-        a       = ast.Variable("a")
+        a       = ast.Proposition("a")
         formula = ast.Next(a)
         tool    = formula.semantic_with_loop(enc, i, k, l)
         manual  = a.semantic_with_loop(enc, 1, k, l)
@@ -622,69 +648,69 @@ class TestSemantics(TestCase):
         
     def test_nnf_variable(self):
         formula = parseLTL("a")
-        self.assertEqual("Variable(a)",       str(formula.nnf(False)))
-        self.assertEqual("(Not Variable(a))", str(formula.nnf(True)))
+        self.assertEqual("Proposition(a)",       str(formula.nnf(False)))
+        self.assertEqual("(Not Proposition(a))", str(formula.nnf(True)))
         
     def test_nnf_not(self):
         formula = parseLTL("!a")
-        self.assertEqual("Variable(a)",       str(formula.nnf(True)))
-        self.assertEqual("(Not Variable(a))", str(formula.nnf(False)))
+        self.assertEqual("Proposition(a)",       str(formula.nnf(True)))
+        self.assertEqual("(Not Proposition(a))", str(formula.nnf(False)))
     
     def test_nnf_and(self):
         # when the operands dont need to be nnf-ed
         formula = parseLTL("a & b")
 
-        negated = "((Not Variable(a)) Or (Not Variable(b)))"
+        negated = "((Not Proposition(a)) Or (Not Proposition(b)))"
         self.assertEqual(negated,       str(formula.nnf(True)))
         
-        not_neg = "(Variable(a) And Variable(b))"
+        not_neg = "(Proposition(a) And Proposition(b))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
         # when the operands need to be nnf-ed
         formula = parseLTL("a & !b")
 
-        negated = "((Not Variable(a)) Or Variable(b))"
+        negated = "((Not Proposition(a)) Or Proposition(b))"
         self.assertEqual(negated,       str(formula.nnf(True)))
         
-        not_neg = "(Variable(a) And (Not Variable(b)))"
+        not_neg = "(Proposition(a) And (Not Proposition(b)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
     
     def test_nnf_or(self):
         # when the operands dont need to be nnf-ed
         formula = parseLTL("a | b")
 
-        negated = "((Not Variable(a)) And (Not Variable(b)))"
+        negated = "((Not Proposition(a)) And (Not Proposition(b)))"
         self.assertEqual(negated,       str(formula.nnf(True)))
         
-        not_neg = "(Variable(a) Or Variable(b))"
+        not_neg = "(Proposition(a) Or Proposition(b))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
         # when the operands need to be nnf-ed
         formula = parseLTL("a | !b")
 
-        negated = "((Not Variable(a)) And Variable(b))"
+        negated = "((Not Proposition(a)) And Proposition(b))"
         self.assertEqual(negated,       str(formula.nnf(True)))
         
-        not_neg = "(Variable(a) Or (Not Variable(b)))"
+        not_neg = "(Proposition(a) Or (Not Proposition(b)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
     def test_nnf_imply(self):
         # when the operands dont need to be nnf-ed
         formula = parseLTL("a => b")
         
-        not_neg = "((Not Variable(a)) Or Variable(b))"
+        not_neg = "((Not Proposition(a)) Or Proposition(b))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Variable(a) And (Not Variable(b)))"
+        negated = "(Proposition(a) And (Not Proposition(b)))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # when the operands need to be nnf-ed
         formula = parseLTL("a => !b")
         
-        not_neg = "((Not Variable(a)) Or (Not Variable(b)))"
+        not_neg = "((Not Proposition(a)) Or (Not Proposition(b)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Variable(a) And Variable(b))"
+        negated = "(Proposition(a) And Proposition(b))"
         self.assertEqual(negated, str(formula.nnf(True)))
     
     def test_nnf_equiv(self):
@@ -692,22 +718,22 @@ class TestSemantics(TestCase):
         formula = parseLTL("a <=> b")
         
         #          (!a | b) & (!b | a)
-        not_neg = "(((Not Variable(a)) Or Variable(b)) And ((Not Variable(b)) Or Variable(a)))"
+        not_neg = "(((Not Proposition(a)) Or Proposition(b)) And ((Not Proposition(b)) Or Proposition(a)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
         #          (a & !b) | (b & !a)
-        negated = "((Variable(a) And (Not Variable(b))) Or (Variable(b) And (Not Variable(a))))"
+        negated = "((Proposition(a) And (Not Proposition(b))) Or (Proposition(b) And (Not Proposition(a))))"
         self.assertEqual(negated, str(formula.nnf(True)))
          
         # when the operands need to be nnf-ed
         formula = parseLTL("a <=> !b")
         
         #          (!a | !b) & (b | a)
-        not_neg = "(((Not Variable(a)) Or (Not Variable(b))) And (Variable(b) Or Variable(a)))"
+        not_neg = "(((Not Proposition(a)) Or (Not Proposition(b))) And (Proposition(b) Or Proposition(a)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
         #          (a & b) | (!b & !a) 
-        negated = "((Variable(a) And Variable(b)) Or ((Not Variable(b)) And (Not Variable(a))))"
+        negated = "((Proposition(a) And Proposition(b)) Or ((Not Proposition(b)) And (Not Proposition(a))))"
         self.assertEqual(negated, str(formula.nnf(True)))
     
     def test_nnf_until(self):
@@ -717,18 +743,18 @@ class TestSemantics(TestCase):
         
         # without operands nnfing
         formula = parseLTL("(p U q)")
-        not_neg = "(Variable(p) Until Variable(q))"
+        not_neg = "(Proposition(p) Until Proposition(q))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "((Not Variable(q)) WeakUntil ((Not Variable(p)) And (Not Variable(q))))"
+        negated = "((Not Proposition(q)) WeakUntil ((Not Proposition(p)) And (Not Proposition(q))))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # wit operands nnfing
         formula = parseLTL("((!p) U (!q))")
-        not_neg = "((Not Variable(p)) Until (Not Variable(q)))"
+        not_neg = "((Not Proposition(p)) Until (Not Proposition(q)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Variable(q) WeakUntil (Variable(p) And Variable(q)))"
+        negated = "(Proposition(q) WeakUntil (Proposition(p) And Proposition(q)))"
         self.assertEqual(negated, str(formula.nnf(True)))
                 
     def test_nnf_weakuntil(self):
@@ -738,66 +764,66 @@ class TestSemantics(TestCase):
         
         # without operands nnfing
         formula = parseLTL("(p W q)")
-        not_neg = "(Variable(p) WeakUntil Variable(q))"
+        not_neg = "(Proposition(p) WeakUntil Proposition(q))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "((Not Variable(q)) Until ((Not Variable(p)) And (Not Variable(q))))"
+        negated = "((Not Proposition(q)) Until ((Not Proposition(p)) And (Not Proposition(q))))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # wit operands nnfing
         formula = parseLTL("((!p) W (!q))")
-        not_neg = "((Not Variable(p)) WeakUntil (Not Variable(q)))"
+        not_neg = "((Not Proposition(p)) WeakUntil (Not Proposition(q)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Variable(q) Until (Variable(p) And Variable(q)))"
+        negated = "(Proposition(q) Until (Proposition(p) And Proposition(q)))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
     def test_nnf_globally(self):
         formula = parseLTL("[] a")
-        not_neg = "(Globally Variable(a))"
+        not_neg = "(Globally Proposition(a))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
 
-        negated = "(Eventually (Not Variable(a)))"
+        negated = "(Eventually (Not Proposition(a)))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # when members need nnfing too
         formula = parseLTL("[] (!a)")
-        not_neg = "(Globally (Not Variable(a)))"
+        not_neg = "(Globally (Not Proposition(a)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
 
-        negated = "(Eventually Variable(a))"
+        negated = "(Eventually Proposition(a))"
         self.assertEqual(negated, str(formula.nnf(True)))
 
     def test_nnf_eventually(self):
         formula = parseLTL("<> a")
-        not_neg = "(Eventually Variable(a))"
+        not_neg = "(Eventually Proposition(a))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
 
-        negated = "(Globally (Not Variable(a)))"
+        negated = "(Globally (Not Proposition(a)))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # when members need nnfing too
         formula = parseLTL("<> (!a)")
-        not_neg = "(Eventually (Not Variable(a)))"
+        not_neg = "(Eventually (Not Proposition(a)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
 
-        negated = "(Globally Variable(a))"
+        negated = "(Globally Proposition(a))"
         self.assertEqual(negated, str(formula.nnf(True)))
     
     def test_nnf_next(self):
         formula = parseLTL("() a")
         # w/o member nnf-ing
-        not_neg = "(Next Variable(a))"
+        not_neg = "(Next Proposition(a))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Next (Not Variable(a)))"
+        negated = "(Next (Not Proposition(a)))"
         self.assertEqual(negated, str(formula.nnf(True)))
         
         # w/ member nnf-ing
         formula = parseLTL("() !a")
-        not_neg = "(Next (Not Variable(a)))"
+        not_neg = "(Next (Not Proposition(a)))"
         self.assertEqual(not_neg, str(formula.nnf(False)))
         
-        negated = "(Next Variable(a))"
+        negated = "(Next Proposition(a))"
         self.assertEqual(negated, str(formula.nnf(True)))
     

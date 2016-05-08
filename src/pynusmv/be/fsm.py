@@ -9,6 +9,7 @@ In particular it contains:
 __all__ = ['BeFsm']
 
 from pynusmv.nusmv.prop    import prop as _prop
+from pynusmv.nusmv.node    import node as _node
 from pynusmv.nusmv.fsm.be  import be   as _be
 from pynusmv.utils         import PointerWrapper
 
@@ -158,7 +159,25 @@ class BeFsm(PointerWrapper):
     
     def fairness_iterator(self):
         """:return: an iterator to iterate over the fairness list"""
-        return NodeIterator.from_pointer(_be.BeFsm_get_fairness_list(self._ptr))
+        _ptr  = _be.BeFsm_get_fairness_list(self._ptr)
+        _iter = NodeIterator.from_pointer(_ptr)
+        for fairness in _iter:
+            yield self._fairness_conversion(fairness)
+    
+    def _fairness_conversion(self, fairness):
+        """
+        Converts the given `fairness` into a Be representation.
+        
+        .. note::
+            This function is present for purely technical reason: under the 
+            hood, NuSMV encodes the fairness list as a NodeList however the
+            'car' (value) of these nodes is nothing that can be understood 
+            AST-wise. Indeed, the values are opaque pointers (be_ptr that is 
+            to say void*) to a structure representing a Be. 
+        """
+        beptr = _be.node_ptr_to_be_ptr(_node.car(fairness._ptr))
+        bexpr = Be(beptr, self.encoding.manager)
+        return bexpr
     
     def apply_synchronous_product(self, other):
         """

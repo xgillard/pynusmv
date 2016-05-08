@@ -5,82 +5,147 @@ in :mod:`tools.bmcLTL.gen`
 '''
 from unittest                    import TestCase
 from tests                       import utils as tests
-from pynusmv.init                import init_nusmv, deinit_nusmv
-from pynusmv.glob                import load_from_file 
-from pynusmv.bmc.glob            import go_bmc, bmc_exit, master_be_fsm
 from tools.bmcLTL                import gen
 
 from pynusmv.bmc                 import ltlspec
 from pynusmv.bmc                 import utils as bmcutils
 from pynusmv.parser              import parse_ltl_spec
 from pynusmv.node                import Node
+from pynusmv.be.expression       import Be 
 from tools.bmcLTL.parsing        import parseLTL
-from pynusmv.sat                 import SatSolverFactory, Polarity
+from pynusmv.sat                 import SatSolverFactory, Polarity,\
+    SatSolverResult
 
 class TestGen(TestCase):
  
-    def setUp(self):
-        init_nusmv()
-        load_from_file(tests.current_directory(__file__)+"/example.smv")
-        go_bmc()
-        self.fsm = master_be_fsm()
-        self.enc = self.fsm.encoding
-        self.mgr = self.enc.manager
-      
-    def tearDown(self):
-        bmc_exit()
-        deinit_nusmv()
-         
     def test_model_problem(self):
-        enc = self.enc
-        # no step taken
-        bound = 0
+        with tests.Configure(self, __file__, "/example.smv"):
+            enc = self.enc
+            # no step taken
+            bound = 0
+             
+            tool  = gen.model_problem(self.befsm, bound)
+            manual= enc.shift_to_time(self.befsm.init, 0)
+             
+            nusmv = bmcutils.BmcModel().path(bound, with_init=True)
+             
+            s_tool   = tests.canonical_cnf(tool)
+            s_manual = tests.canonical_cnf(manual)
+            s_nusmv  = tests.canonical_cnf(nusmv)
+             
+            self.assertEqual(s_tool, s_nusmv)
+            self.assertEqual(s_tool, s_manual)
+             
+            # one step taken
+            bound = 1
+             
+            tool  = gen.model_problem(self.befsm, bound)
+            manual= enc.shift_to_time(self.befsm.trans,0) &\
+                    enc.shift_to_time(self.befsm.init, 0)
+             
+            nusmv = bmcutils.BmcModel().path(bound, with_init=True)
+             
+            s_tool   = tests.canonical_cnf(tool)
+            s_manual = tests.canonical_cnf(manual)
+            s_nusmv  = tests.canonical_cnf(nusmv)
+             
+            self.assertEqual(s_tool, s_manual)
+            self.assertEqual(s_tool, s_nusmv)
+             
+            # two steps
+            bound = 2
+             
+            tool  = gen.model_problem(self.befsm, bound)
+            manual= enc.shift_to_time(self.befsm.init, 0) &\
+                    enc.shift_to_time(self.befsm.trans,0) &\
+                    enc.shift_to_time(self.befsm.trans,1)
+             
+            nusmv = bmcutils.BmcModel().path(bound, with_init=True)
+             
+            s_tool   = tests.canonical_cnf(tool)
+            s_manual = tests.canonical_cnf(manual)
+            s_nusmv  = tests.canonical_cnf(nusmv)
+             
+            self.assertEqual(s_tool, s_manual)
+            self.assertEqual(s_tool, s_nusmv)
+    
+    def verify_step_fairness_constraint(self):
+        # must be true
+        tool = gen.step_fairness_constraint(self.befsm, 0, 0)
+        self.assertEqual(tool, Be.true(self.mgr))
          
-        tool  = gen.model_problem(self.fsm, bound)
-        manual= enc.shift_to_time(self.fsm.init, 0)
+        # loop position does not matter if not feasible
+        tool = gen.step_fairness_constraint(self.befsm, 0, 1)
+        self.assertEqual(tool, Be.true(self.mgr))
+        
+        model= bmcutils.BmcModel()
+        # step 0
+        tool = gen.step_fairness_constraint(self.befsm, 1, 0)
+        smv  = model.fairness(1, 0) 
+        self.assertEqual(tool, smv)
          
-        nusmv = bmcutils.BmcModel().path(bound, with_init=True)
-         
-        s_tool   = tests.canonical_cnf(tool)
-        s_manual = tests.canonical_cnf(manual)
-        s_nusmv  = tests.canonical_cnf(nusmv)
-         
-        self.assertEqual(s_tool, s_nusmv)
-        self.assertEqual(s_tool, s_manual)
-         
-        # one step taken
-        bound = 1
-         
-        tool  = gen.model_problem(self.fsm, bound)
-        manual= enc.shift_to_time(self.fsm.trans,0) &\
-                enc.shift_to_time(self.fsm.init, 0)
-         
-        nusmv = bmcutils.BmcModel().path(bound, with_init=True)
-         
-        s_tool   = tests.canonical_cnf(tool)
-        s_manual = tests.canonical_cnf(manual)
-        s_nusmv  = tests.canonical_cnf(nusmv)
-         
-        self.assertEqual(s_tool, s_manual)
-        self.assertEqual(s_tool, s_nusmv)
-         
-        # two steps
-        bound = 2
-         
-        tool  = gen.model_problem(self.fsm, bound)
-        manual= enc.shift_to_time(self.fsm.init, 0) &\
-                enc.shift_to_time(self.fsm.trans,0) &\
-                enc.shift_to_time(self.fsm.trans,1)
-         
-        nusmv = bmcutils.BmcModel().path(bound, with_init=True)
-         
-        s_tool   = tests.canonical_cnf(tool)
-        s_manual = tests.canonical_cnf(manual)
-        s_nusmv  = tests.canonical_cnf(nusmv)
-         
-        self.assertEqual(s_tool, s_manual)
-        self.assertEqual(s_tool, s_nusmv)
- 
+        # step 1
+        tool = gen.step_fairness_constraint(self.befsm, 2, 1)
+        smv  = model.fairness(2, 1) 
+        self.assertEqual(tool, smv)
+        
+    def test_step_fairness_constraint(self):
+        with tests.Configure(self, __file__, "/example.smv"):
+            self.verify_step_fairness_constraint()
+        
+        with tests.Configure(self, __file__, "/philo.smv"):
+            self.verify_step_fairness_constraint()
+           
+    def verify_fairness_constraint(self, bound):
+        model  = bmcutils.BmcModel() 
+            
+        manual = Be.true(self.mgr) 
+        for i in range(bound):
+            manual &= model.fairness(bound, i)
+        
+        tool = gen.fairness_constraint(self.befsm, bound)
+        
+        self.assertEqual(tests.canonical_cnf(tool), 
+                         tests.canonical_cnf(manual))
+            
+    def test_fairness_constraint(self):
+        with tests.Configure(self, __file__, "/example.smv"):
+            self.verify_fairness_constraint(0)
+            self.verify_fairness_constraint(1)
+            self.verify_fairness_constraint(2)
+            self.verify_fairness_constraint(3)
+            
+        with tests.Configure(self, __file__, "/philo.smv"):
+            self.verify_fairness_constraint(0)
+            self.verify_fairness_constraint(1)
+            self.verify_fairness_constraint(2)
+            self.verify_fairness_constraint(3)
+    
+    def verify_invariants_constraint(self, bound):
+        model  = bmcutils.BmcModel() 
+            
+        manual = Be.true(self.mgr) 
+        for i in range(bound+1):
+            manual &= model.invar[i]
+        
+        tool = gen.invariants_constraint(self.befsm, bound)
+        
+        self.assertEqual(tests.canonical_cnf(tool), 
+                         tests.canonical_cnf(manual))
+        
+    def test_invariants_constraint(self):
+        with tests.Configure(self, __file__, "/example.smv"):
+            self.verify_invariants_constraint(0)
+            self.verify_invariants_constraint(1)
+            self.verify_invariants_constraint(2)
+            self.verify_invariants_constraint(3)
+        
+        with tests.Configure(self, __file__, "/dummy_with_invar.smv"):
+            self.verify_invariants_constraint(0)
+            self.verify_invariants_constraint(1)
+            self.verify_invariants_constraint(2)
+            self.verify_invariants_constraint(3)
+    
     def satisfiability(self, problem):
         solver = SatSolverFactory.create()
         solver+= problem.to_cnf()
@@ -88,7 +153,7 @@ class TestGen(TestCase):
         return solver.solve()
        
     def validate_generate_problem(self, bound, custom_text, nusmv_text):
-        fsm     = self.fsm
+        fsm     = self.befsm
         # formulae
         formula = parseLTL(custom_text)
         fml_node= Node.from_ptr(parse_ltl_spec(nusmv_text))
@@ -113,25 +178,79 @@ class TestGen(TestCase):
         self.assertEqual(sat_tool, sat_man)
         self.assertEqual(sat_tool, sat_smv)
          
-    def test_generate_problem(self):
-        # length 0
-        self.validate_generate_problem(0, "<>(a <=> !b)", "F (a <-> !b)")
-        self.validate_generate_problem(0, "[](a <=> !b)", "G (a <-> !b)")
-        self.validate_generate_problem(0, "(a U b)", "(a U b)")
-        self.validate_generate_problem(0, "a => () b", "a -> (X b)")
-        # length 1
-        self.validate_generate_problem(1, "<>(a <=> !b)", "F (a <-> !b)")
-        self.validate_generate_problem(1, "[](a <=> !b)", "G (a <-> !b)")
-        self.validate_generate_problem(1, "(a U b)", "(a U b)")
-        self.validate_generate_problem(1, "a => () b", "a -> (X b)")
-        # length 2
-        self.validate_generate_problem(2, "<>(a <=> !b)", "F (a <-> !b)")
-        self.validate_generate_problem(2, "[](a <=> !b)", "G (a <-> !b)")
-        self.validate_generate_problem(2, "(a U b)", "(a U b)")
-        self.validate_generate_problem(2, "a => () b", "a -> (X b)")
-        # length 3
-        self.validate_generate_problem(3, "<>(a <=> !b)", "F (a <-> !b)")
-        self.validate_generate_problem(3, "[](a <=> !b)", "G (a <-> !b)")
-        self.validate_generate_problem(3, "(a U b)", "(a U b)")
-        self.validate_generate_problem(3, "a => () b", "a -> (X b)")
+    def test_generate_problem_nofairness_noinvars(self):
+        with tests.Configure(self, __file__, "/example.smv"):
+            # length 0
+            self.validate_generate_problem(0, "<>(a <=> !b)", "F (a <-> !b)")
+            self.validate_generate_problem(0, "[](a <=> !b)", "G (a <-> !b)")
+            self.validate_generate_problem(0, "(a U b)", "(a U b)")
+            self.validate_generate_problem(0, "a => () b", "a -> (X b)")
+            # length 1
+            self.validate_generate_problem(1, "<>(a <=> !b)", "F (a <-> !b)")
+            self.validate_generate_problem(1, "[](a <=> !b)", "G (a <-> !b)")
+            self.validate_generate_problem(1, "(a U b)", "(a U b)")
+            self.validate_generate_problem(1, "a => () b", "a -> (X b)")
+            # length 2
+            self.validate_generate_problem(2, "<>(a <=> !b)", "F (a <-> !b)")
+            self.validate_generate_problem(2, "[](a <=> !b)", "G (a <-> !b)")
+            self.validate_generate_problem(2, "(a U b)", "(a U b)")
+            self.validate_generate_problem(2, "a => () b", "a -> (X b)")
+            # length 3
+            self.validate_generate_problem(3, "<>(a <=> !b)", "F (a <-> !b)")
+            self.validate_generate_problem(3, "[](a <=> !b)", "G (a <-> !b)")
+            self.validate_generate_problem(3, "(a U b)", "(a U b)")
+            self.validate_generate_problem(3, "a => () b", "a -> (X b)")
         
+    def test_generate_problem_with_fairness(self):
+        '''
+        This test clearly shows the difference in validating a property with
+        or without fairness constraint
+        '''
+        with tests.Configure(self, __file__, "/philo.smv"):
+            # length 0
+            # nusmv has fairness always on.
+            fml_node= Node.from_ptr(parse_ltl_spec("G (p1.waiting -> F !p1.waiting)"))
+            smv     = ltlspec.generate_ltl_problem(self.befsm, fml_node, 0)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(smv))
+            
+            formula = parseLTL("[](p1.waiting => <>!p1.waiting)")
+            unfair  = gen.generate_problem(formula, self.befsm, 0, fairness=False)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(unfair))
+            
+            fair    = gen.generate_problem(formula, self.befsm, 0, fairness=True)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(fair))
+            
+            # length 1
+            fml_node= Node.from_ptr(parse_ltl_spec("G (p1.waiting -> F !p1.waiting)"))
+            smv     = ltlspec.generate_ltl_problem(self.befsm, fml_node, 1)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(smv))
+            
+            formula = parseLTL("[](p1.waiting => <>!p1.waiting)")
+            unfair  = gen.generate_problem(formula, self.befsm, 1, fairness=False)
+            self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(unfair))
+            
+            fair    = gen.generate_problem(formula, self.befsm, 1, fairness=True)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(fair))
+            
+    def test_generate_problem_with_invars(self):
+        '''
+        This test clearly shows the difference in validating a property with
+        or without fairness constraint
+        '''
+        with tests.Configure(self, __file__, "/dummy_with_invar.smv"):
+            # length 0
+            formula = parseLTL("[] v")
+            
+            noinvar = gen.generate_problem(formula, self.befsm, 0)
+            self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(noinvar))
+            
+            w_invar = gen.generate_problem(formula, self.befsm, 0, invariants=True)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(w_invar))
+            
+            # length 1
+            noinvar = gen.generate_problem(formula, self.befsm, 1)
+            self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(noinvar))
+            
+            w_invar = gen.generate_problem(formula, self.befsm, 1, invariants=True)
+            self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(w_invar))
+            

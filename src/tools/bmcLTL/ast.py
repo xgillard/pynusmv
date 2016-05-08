@@ -18,7 +18,10 @@ compose an LTL abstract syntax tree.
                 Biere et al - ``Bounded Model Checking'' - 2003  
 """
 
+from pynusmv.bmc.glob      import master_be_fsm
 from pynusmv.be.expression import Be
+from pynusmv.wff           import Wff 
+from pynusmv.parser import parse_simple_expression
 
 ###############################################################################
 # Utility functions: 
@@ -226,9 +229,49 @@ class Constant(Atomic):
         else:
             return Constant("FALSE") if self.id == "TRUE" else Constant("TRUE")
     
-class Variable(Atomic):
+class Proposition(Atomic):
+    def _booleanize(self):
+        """
+        Returns a boolean expression (Be) corresponding to this simple 
+        boolean expression (text).
+        
+        .. note:: 
+            Albeit feasible, working directly with variables as offered by the
+            encoding is a little bit limiting as it de facto rejects any symbol
+            which is not a variable. As a consequence, the DEFINES, or 
+            arithmetic expressions are not usable.
+             
+            The use of this function palliates that limitation and makes the 
+            use of any simple boolean expression possible.
+        
+        :return: a be expression (Be) corresponding to `self`
+        """
+        befsm = master_be_fsm()
+        node  = parse_simple_expression(self.id)
+        return Wff(node).to_boolean_wff().to_be(befsm.encoding)
+    
+    def _at_time(self, time):
+        """
+        Returns a boolean expression (Be) corresponding to this simple 
+        boolean expression (text) at the time step `time`.
+        
+        .. note:: 
+            Albeit feasible, working directly with variables as offered by the
+            encoding is a little bit limiting as it de facto rejects any symbol
+            which is not a variable. As a consequence, the DEFINES, or 
+            arithmetic expressions are not usable.
+             
+            The use of this function palliates that limitation and makes the 
+            use of any simple boolean expression possible.
+        
+        :param time: the time at which the symbol should be shifted.
+        :return: a be expression (Be) corresponding to `self` at `time`
+        """
+        booleanized = self._booleanize()
+        return master_be_fsm().encoding.shift_to_time(booleanized, time) 
+    
     def semantic_no_loop(self, enc, i, k):
-        return enc.by_name[self.id].at_time[i].boolean_expression
+        return self._at_time(i)
     
     def semantic_with_loop(self, enc, i, k, l):
         return self.semantic_no_loop(enc, i, k)
@@ -281,6 +324,25 @@ class Or(Binary):
             return Or(self.lhs.nnf(False), self.rhs.nnf(False))
         else:
             return And(self.lhs.nnf(True), self.rhs.nnf(True))
+        
+class Xor(Binary):
+    def semantic_no_loop(self, enc, i, k):
+        lhs = self.lhs.semantic_no_loop(enc, i, k)
+        rhs = self.rhs.semantic_no_loop(enc, i, k)
+        return lhs ^ rhs
+    
+    def semantic_with_loop(self, enc, i, k, l):
+        lhs = self.lhs.semantic_with_loop(enc, i, k, l)
+        rhs = self.rhs.semantic_with_loop(enc, i, k, l)
+        return lhs ^ rhs
+    
+    def nnf(self, negated):
+        if not negated:
+            return Xor(self.lhs.nnf(False), self.rhs.nnf(False))
+        else:
+            # rewrite using : p ^ q <=> (p | q) & !(p & q)
+            rewrite = And(Or(self.lhs, self.rhs), Not(And(self.lhs, self.rhs)))
+            return rewrite.nnf(negated)
         
 class Imply(Binary):
     def semantic_no_loop(self, enc, i, k):
