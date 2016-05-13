@@ -516,3 +516,42 @@ class TestBmcUtils(unittest.TestCase):
             self.assertIsNotNone(trace)
             self.assertEqual(2, len(trace))
             print(trace)
+            
+    def test_get_symbol(self):
+        load_from_string(
+            """
+            MODULE main
+            VAR       w : boolean;
+            IVAR      x : boolean;
+            FROZENVAR y : boolean;
+            DEFINE  z := (x & w);
+            """)
+        with BmcSupport():
+            # fails when not found
+            with self.assertRaises(ValueError):
+                bmcutils.get_symbol("a")
+            # works for all types of vars
+            self.assertEqual("w", str(bmcutils.get_symbol("w")))
+            self.assertEqual("x", str(bmcutils.get_symbol("x")))
+            self.assertEqual("y", str(bmcutils.get_symbol("y")))
+            self.assertEqual("z", str(bmcutils.get_symbol("z")))
+            
+            
+    def test_booleanize(self):
+        load_from_string(
+            """
+            MODULE main
+            VAR
+                -- requires two bits
+                i : 0..3;
+                -- requires no transformation
+                b : boolean;
+            """)
+        with BmcSupport():
+            # fails for non existing symbols
+            with self.assertRaises(ValueError):
+                bmcutils.booleanize("c")
+            # works as expected for existing vars
+            self.assertEqual("[i.1, i.0]", str(bmcutils.booleanize("i")))
+            self.assertEqual("[b]", str(bmcutils.booleanize("b")))
+            

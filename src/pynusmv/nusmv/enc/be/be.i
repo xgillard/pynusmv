@@ -23,6 +23,14 @@
 	    return (BaseEnc_ptr) _enc;
 	}
 	
+	BoolEncClient_ptr BeEnc_ptr_to_BoolEncClient_ptr(BeEnc_ptr _enc) {
+	    return (BoolEncClient_ptr) _enc;
+	}
+	
+	BoolEnc_ptr BeEnc_ptr_get_bool_enc(BeEnc_ptr _enc) {
+		return ((BoolEncClient_ptr) _enc)->bool_enc;
+	}
+	
 	be_ptr substitute_in_formula(BeEnc_ptr be_enc, be_ptr formula, PyObject* subst_lst){
 		/*************** STEP1: Convert the list to int* *********************/
 		be_ptr result;

@@ -62,7 +62,8 @@ class TestDiagnosability(TestCase):
         self.assertEqual(manual, tool)
     
     def test_constraint_same_observations(self):
-        constraint = diagnosability.constraint_same_observations(0, 5, 5)
+        observable = diagnosability.mk_observable_set([])
+        constraint = diagnosability.constraint_same_observations(observable, 0, 5, 5)
         model      = bmcutils.BmcModel()
         
         manual     = Be.true(model._fsm.encoding.manager)
@@ -114,11 +115,12 @@ class TestDiagnosability(TestCase):
         self.assertEqual(result_c, result_m)
         
     def test_generate_sat_problem(self):
+        observable = diagnosability.mk_observable_set([])
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
          
         for i in range(5):
-            problem = diagnosability.generate_sat_problem((f1, f2), i)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -131,7 +133,7 @@ class TestDiagnosability(TestCase):
         for i in range(1, 4): 
             # length zero has no input => only an initial state and the 
             # diagnosability condition is not checked
-            problem = diagnosability.generate_sat_problem((f1, f2), i)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -139,25 +141,39 @@ class TestDiagnosability(TestCase):
             self.assertEqual(SatSolverResult.SATISFIABLE, solver.solve())
 
     def test_verify_exactly(self):
+        observable = diagnosability.mk_observable_set([])
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
         
         for i in range(5):
-            res = diagnosability.verify_for_size_exactly_k((f1, f2), i)
+            res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), i)
             self.assertEqual("No Violation", res)
         
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = highlight"))
         
-        res = diagnosability.verify_for_size_exactly_k((f1, f2), 0)
+        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 0)
         self.assertEqual("No Violation", res)
         
-        res = diagnosability.verify_for_size_exactly_k((f1, f2), 1)
+        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 1)
         self.assertIsInstance(res, Trace)
         
-        res = diagnosability.verify_for_size_exactly_k((f1, f2), 2)
+        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 2)
         self.assertIsInstance(res, Trace)
         
-        res = diagnosability.verify_for_size_exactly_k((f1, f2), 3)
+        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 3)
         self.assertIsInstance(res, Trace)
         
+    def test_mk_observable_set(self):
+        enc = master_be_fsm().encoding
+        
+        # if a non existing var name is passed, an exception is thrown
+        with self.assertRaises(ValueError):
+                diagnosability.mk_observable_set(["a"])
+        
+        # by default all input vars are observable
+        observable = diagnosability.mk_observable_set([])
+        self.assertEqual(observable, enc.input_variables)
+        
+        observable = diagnosability.mk_observable_set(["status"])
+        self.assertEqual(observable, [enc.by_name["status.1"], enc.by_name["status.0"]])

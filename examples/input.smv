@@ -15,8 +15,8 @@ MODULE main
 -- Here are sample commands you might want to use to learn about the diag. tool:
 -- =============================================================================
 --
--- python3 -m tools.diagnosability -s "status = active ; status = inactive" ../examples/input.smv
--- python3 -m tools.diagnosability -s "status = active ; status = highlight" ../examples/input.smv
+-- python3 -m tools.diagnosability --observable mouse -spec "status = active ; status = inactive"  ../examples/input.smv
+-- python3 -m tools.diagnosability --observable mouse -spec "status = active ; status = highlight" ../examples/input.smv
 --
 -- #############################################################################
 IVAR

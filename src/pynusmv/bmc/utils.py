@@ -12,15 +12,22 @@ These are roughly organized in six categories:
 
 from enum import IntEnum
 
-from pynusmv.nusmv.bmc     import bmc    as _bmc
-from pynusmv.nusmv.parser  import parser as _parser 
+from pynusmv.nusmv.bmc      import bmc    as _bmc
+from pynusmv.nusmv.parser   import parser as _parser 
 
-from pynusmv.utils         import indexed
-from pynusmv               import glob
-from pynusmv.wff           import Wff
-from pynusmv.trace         import Trace 
-from pynusmv.be.expression import Be 
-from pynusmv.bmc           import glob as bmcglob
+from pynusmv.nusmv.enc.base import base   as _basenc 
+from pynusmv.nusmv.enc.bool import bool   as _boolenc 
+from pynusmv.nusmv.enc.be   import be     as _beenc 
+
+from pynusmv.nusmv.compile  import compile as _compile 
+
+from pynusmv.utils          import indexed
+from pynusmv                import glob
+from pynusmv.wff            import Wff
+from pynusmv.trace          import Trace 
+from pynusmv.be.expression  import Be 
+from pynusmv.bmc            import glob as bmcglob
+from pynusmv.collections    import NodeList
 
 __all__ = [# loop related stuffs
            'all_loopbacks', 'no_loopback', 'is_all_loopbacks', 'is_no_loopback',
@@ -271,6 +278,53 @@ def apply_inlining_for_incremental_algo(be_expr):
 ###############################################################################
 # Nodes/Normalisation
 ###############################################################################
+def get_symbol(name):
+    """
+    Conveniency method to retrieve a symbol (not necessarily a variable, it can
+    also be a DEFINE) by its name.
+    
+    :param name: a string version of the name of the symbol to retrieve
+    :return: a Node standing for the looked up symbol or None if it could not 
+        be found.
+    :raises ValueError: when the requested name cannot be found in the symbol
+        table
+    """
+    try:
+        sexpfsm = glob.master_bool_sexp_fsm()
+        return next(x for x in sexpfsm.symbols_list if str(x) == name)
+    except StopIteration:
+        #raised when the 'name' key could not be found, rethrow
+        raise ValueError("{} not found in the symbol table".format(name))
+    
+def booleanize(name):
+    """
+    Returns the list of boolean variables names standing for the symbol 
+    identified by `name` in the compiled boolean model.
+    
+    .. note::
+    
+        Obviously, if `name` denotes a boolean variable, the `name` symbol is
+        returned.
+    
+    :param name: the name of the symbol whose boolean representatives are wanted
+    :return: a list of variable names (in Node format) that are used to 
+        represent `name` in the encoded boolean model. 
+    :raises ValueError: when the requested name cannot be found in the symbol
+        table
+    """
+    symbol  = get_symbol(name)  
+    fsm     = bmcglob.master_be_fsm()
+    try:
+        # raises a KeyError when 'name' is not found
+        fsm.encoding.by_name[name]
+        # if found, its ok to just use 'symbol'
+        return [symbol]
+    except KeyError:
+        # the encoder doesn't know 'name' we need to find the bits
+        boolenc = _basenc.BoolEncClient_get_bool_enc(_beenc.BeEnc_ptr_to_BoolEncClient_ptr(fsm.encoding._ptr))
+        node_lst= NodeList(_boolenc.BoolEnc_get_var_bits(boolenc, symbol._ptr))
+        return list(node_lst)
+
 def make_nnf_boolean_wff(prop_node):
     """
     Decorates the property identified by `prop_node` to become a boolean WFF,
