@@ -68,7 +68,7 @@ class PointerWrapper(object):
         
         :return: an object that can serve as key to perform the lookup in a dict.
         """
-        return self._ptr
+        return self._ptr.__hash__()
 
     def __eq__(self, other):
         """

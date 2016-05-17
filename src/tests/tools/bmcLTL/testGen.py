@@ -214,10 +214,10 @@ class TestGen(TestCase):
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(smv))
             
             formula = parseLTL("[](p1.waiting => <>!p1.waiting)")
-            unfair  = gen.generate_problem(formula, self.befsm, 0, fairness=False)
+            unfair  = gen.generate_problem(formula, self.befsm, 0, no_fairness=True)
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(unfair))
             
-            fair    = gen.generate_problem(formula, self.befsm, 0, fairness=True)
+            fair    = gen.generate_problem(formula, self.befsm, 0, no_fairness=False)
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(fair))
             
             # length 1
@@ -226,10 +226,10 @@ class TestGen(TestCase):
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(smv))
             
             formula = parseLTL("[](p1.waiting => <>!p1.waiting)")
-            unfair  = gen.generate_problem(formula, self.befsm, 1, fairness=False)
+            unfair  = gen.generate_problem(formula, self.befsm, 1, no_fairness=True)
             self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(unfair))
             
-            fair    = gen.generate_problem(formula, self.befsm, 1, fairness=True)
+            fair    = gen.generate_problem(formula, self.befsm, 1, no_fairness=False)
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(fair))
             
     def test_generate_problem_with_invars(self):
@@ -241,16 +241,16 @@ class TestGen(TestCase):
             # length 0
             formula = parseLTL("[] v")
             
-            noinvar = gen.generate_problem(formula, self.befsm, 0)
+            noinvar = gen.generate_problem(formula, self.befsm, 0, no_invar=True)
             self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(noinvar))
             
-            w_invar = gen.generate_problem(formula, self.befsm, 0, invariants=True)
+            w_invar = gen.generate_problem(formula, self.befsm, 0, no_invar=False)
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(w_invar))
             
             # length 1
-            noinvar = gen.generate_problem(formula, self.befsm, 1)
+            noinvar = gen.generate_problem(formula, self.befsm, 1, no_invar=True)
             self.assertEqual(SatSolverResult.SATISFIABLE, self.satisfiability(noinvar))
             
-            w_invar = gen.generate_problem(formula, self.befsm, 1, invariants=True)
+            w_invar = gen.generate_problem(formula, self.befsm, 1, no_invar=False)
             self.assertEqual(SatSolverResult.UNSATISFIABLE, self.satisfiability(w_invar))
             

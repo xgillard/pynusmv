@@ -86,17 +86,6 @@ def suite():
     return suite
 
 @with_warnings
-@with_coverage(
-    'pynusmv/be/*',
-    'pynusmv/bmc/*',
-    'pynusmv/sexp/*',
-    'pynusmv/collections.py',  
-    'pynusmv/sat.py',
-    'pynusmv/trace.py',
-    'pynusmv/utils.py',
-    'pynusmv/wff.py', 
-    'tools/bmcLTL/*',
-    'tools/diagnosability.py')
 def run_suite():
     """Runs the configured test suite"""
     runner = unittest.TextTestRunner()

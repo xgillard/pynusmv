@@ -83,7 +83,7 @@ def invariants_constraint(fsm, k):
     #    \bigwedge_{i=0}^{k} (invariants_{i})
     return fsm.encoding.and_interval(fsm.invariants, 0, k)
 
-def generate_problem(fml, fsm, k=10, fairness=False, invariants=False):
+def generate_problem(fml, fsm, k=10, no_fairness=False, no_invar=False):
     """
     Generates a formula representing a SAT problem that is satisfiable iff
     the the `fsm` violates the formula represented in `formula_text`.
@@ -96,10 +96,10 @@ def generate_problem(fml, fsm, k=10, fairness=False, invariants=False):
         format (Node).
     :param fsm: the FSM representing the model.
     :param k: the maximum (horizon/bound) time of the problem
-    :param fairness: a flag telling whether or not the generated problem should
+    :param no_fairness: a flag telling whether or not the generated problem should
         focus on fair executions only (the considered fairness constraints must
         be declared in the SMV model).
-    :param invariants: a flag telling whether or not the generated problem 
+    :param no_invar: a flag telling whether or not the generated problem 
         should enforce the declared invariants (these must be declared in the
         SMV text).
     :return: a Be expression that is satisfiable iff the fsm can violate the 
@@ -111,11 +111,11 @@ def generate_problem(fml, fsm, k=10, fairness=False, invariants=False):
     problem = model_problem(fsm, k) & negated.bounded_semantics(enc, k)
     
     # enforce invariants if needed
-    if invariants:
+    if not no_invar:
         problem &= invariants_constraint(fsm, k)
     
     # add fairness constraint if required
-    if fairness:
+    if not no_fairness:
         problem &= fairness_constraint(fsm, k)
         
     return problem

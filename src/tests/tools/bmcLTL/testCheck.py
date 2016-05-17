@@ -254,12 +254,12 @@ class TestCheck(TestCase):
             formula = parseLTL("(!<>[](p1.waiting)) & (!<>[](p2.waiting))")
             
             # unfair
-            status,_,trace = check.check_ltl(formula, 10, False)
+            status,_,trace = check.check_ltl(formula, 10, no_fairness=True)
             self.assertEqual("Violation", status)
             self.assertEqual(3, len(trace))
             
             # fair exec only
-            status,_,trace = check.check_ltl(formula, 10, True)
+            status,_,trace = check.check_ltl(formula, 10, no_fairness=False)
             self.assertEqual("Ok", status)
             self.assertIsNone(trace)
             
@@ -271,12 +271,12 @@ class TestCheck(TestCase):
             formula = parseLTL("[] v")
             
             # invariants enforced
-            status,_,trace = check.check_ltl(formula, 10, invariants=False)
+            status,_,trace = check.check_ltl(formula, 10, no_invar=True)
             self.assertEqual("Violation", status)
             self.assertEqual(0, len(trace))
             
             # invariants enforced
-            status,_,trace = check.check_ltl(formula, 10, invariants=True)
+            status,_,trace = check.check_ltl(formula, 10, no_invar=False)
             self.assertEqual("Ok", status)
             self.assertIsNone(trace)
             
@@ -287,7 +287,7 @@ class TestCheck(TestCase):
         with tests.Configure(self, __file__, "/numbers.smv"):
             formula = parseLTL("[] a < 7")
             
-            status,_,trace = check.check_ltl(formula, 10, invariants=True)
+            status,_,trace = check.check_ltl(formula, 10, no_invar=False)
             self.assertEqual("Ok", status)
             self.assertIsNone(trace)
             

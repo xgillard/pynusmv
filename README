@@ -157,8 +157,20 @@ This package contains
     - tests/ : PyNuSMV and PyNuSMV-based tools unit tests.
     
 Note that pre-compiled versions have less content because only the minimal required files (i.e. PyNuSMV files and nusmv shared library) are included.
-	
-	
+
+---------------------------
+TESTING AND COVERAGE REPORT
+---------------------------
+Use the following two commands to run the unit tests and build the coverage report.
+
+coverage run -m unittest
+coverage html
+
+or, if you want to only output the report relating to the SAT-BMC addition, 
+
+coverage html --include "pynusmv/bmc/*,pynusmv/be/*,pynusmv/sexp/*,pynusmv/collections*,pynusmv/sat*,pynusmv/trace*,pynusmv/utils*,pynusmv/wff*,tools/bmcLTL/*,tools/diagnosability*"
+
+
 ---------
 COPYRIGHT
 ---------

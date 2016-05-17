@@ -62,7 +62,7 @@ class TestDiagnosability(TestCase):
         self.assertEqual(manual, tool)
     
     def test_constraint_same_observations(self):
-        observable = diagnosability.mk_observable_set([])
+        observable = diagnosability.mk_observable_vars(["mouse"])
         constraint = diagnosability.constraint_same_observations(observable, 0, 5, 5)
         model      = bmcutils.BmcModel()
         
@@ -115,7 +115,7 @@ class TestDiagnosability(TestCase):
         self.assertEqual(result_c, result_m)
         
     def test_generate_sat_problem(self):
-        observable = diagnosability.mk_observable_set([])
+        observable = diagnosability.mk_observable_vars(["mouse"])
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
          
@@ -141,7 +141,7 @@ class TestDiagnosability(TestCase):
             self.assertEqual(SatSolverResult.SATISFIABLE, solver.solve())
 
     def test_verify_exactly(self):
-        observable = diagnosability.mk_observable_set([])
+        observable = diagnosability.mk_observable_vars(["mouse"])
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
         
@@ -164,16 +164,12 @@ class TestDiagnosability(TestCase):
         res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 3)
         self.assertIsInstance(res, Trace)
         
-    def test_mk_observable_set(self):
+    def test_mk_observable_vars(self):
         enc = master_be_fsm().encoding
         
         # if a non existing var name is passed, an exception is thrown
         with self.assertRaises(ValueError):
-                diagnosability.mk_observable_set(["a"])
-        
-        # by default all input vars are observable
-        observable = diagnosability.mk_observable_set([])
-        self.assertEqual(observable, enc.input_variables)
-        
-        observable = diagnosability.mk_observable_set(["status"])
+                diagnosability.mk_observable_vars(["a"])
+                
+        observable = diagnosability.mk_observable_vars(["status"])
         self.assertEqual(observable, [enc.by_name["status.1"], enc.by_name["status.0"]])

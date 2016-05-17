@@ -7,7 +7,7 @@ from pynusmv.sat        import SatSolverResult, SatSolverFactory, Polarity
 from pynusmv.bmc.utils  import generate_counter_example
 from tools.bmcLTL.gen   import generate_problem
 
-def check_ltl_onepb(fml, length, fairness=False, invariants=False):
+def check_ltl_onepb(fml, length, no_fairness=False, no_invar=False):
     """
     This function verifies that the given FSM satisfies the given property
     (specified as text) for paths with an exact length of `length`.
@@ -16,10 +16,10 @@ def check_ltl_onepb(fml, length, fairness=False, invariants=False):
         abstract syntax tree of that formula). Note, this is *NOT* the NuSMV
         format (Node).
     :param length: the exact length of the considered paths
-    :param fairness: a flag telling whether or not the generated problem should
+    :param no_fairness: a flag telling whether or not the generated problem should
         focus on fair executions only (the considered fairness constraints must
         be declared in the SMV model).
-    :param invariants: a flag telling whether or not the generated problem 
+    :param no_invar: a flag telling whether or not the generated problem 
         should enforce the declared invariants (these must be declared in the
         SMV text).
     :return: a tuple ('OK', None) if the property is satisfied on all paths of 
@@ -29,7 +29,7 @@ def check_ltl_onepb(fml, length, fairness=False, invariants=False):
         the property
     """
     fsm    = master_be_fsm()
-    pb     = generate_problem(fml, fsm, length, fairness, invariants)
+    pb     = generate_problem(fml, fsm, length, no_fairness, no_invar)
     cnf    = pb.to_cnf(Polarity.POSITIVE)
     
     solver = SatSolverFactory.create()
@@ -42,7 +42,7 @@ def check_ltl_onepb(fml, length, fairness=False, invariants=False):
     else:
         return ("Ok", None)
     
-def check_ltl(fml, bound, fairness=False, invariants=False):
+def check_ltl(fml, bound, no_fairness=False, no_invar=False):
     """
     This function performs the bounded model checking of the formula given in 
     text format (as specified per the grammar in `parsing` module). It verifies
@@ -52,10 +52,10 @@ def check_ltl(fml, bound, fairness=False, invariants=False):
         abstract syntax tree of that formula). Note, this is *NOT* the NuSMV
         format (Node).
     :param bound: the maximum length of a path in the verification.
-    :param fairness: a flag telling whether or not the generated problem should
+    :param no_fairness: a flag telling whether or not the generated problem should
         focus on fair executions only (the considered fairness constraints must
         be declared in the SMV model).
-    :param invariants: a flag telling whether or not the generated problem 
+    :param no_invar: a flag telling whether or not the generated problem 
         should enforce the declared invariants (these must be declared in the
         SMV text).
     :return: a tuple (status, len, trace) where status is 'Ok', len = bound and
@@ -64,7 +64,7 @@ def check_ltl(fml, bound, fairness=False, invariants=False):
         trace is a counter example leading to a property violation.
     """
     for i in range(bound+1):
-        status, trace = check_ltl_onepb(fml, i, fairness, invariants) 
+        status, trace = check_ltl_onepb(fml, i, no_fairness, no_invar) 
         if status != "Ok":
             return (status, i, trace)
         else:

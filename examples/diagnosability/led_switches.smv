@@ -1,0 +1,40 @@
+MODULE main
+-- a simple setup with three cbr in a hierarchy and four observable leds
+VAR
+  led0 : Led;
+  led1 : Led;
+  led2 : Led;
+  led3 : Led;
+
+  cbr1 : CircuitBreaker(led0, led1);
+  cbr2 : CircuitBreaker(led2, led3);
+  cbr0 : CircuitBreaker(cbr1, cbr2);
+
+MODULE Led
+-- a plain led that can be turned on or off
+VAR
+  status : {on, off};
+
+ASSIGN
+  init(status) := on;
+
+MODULE CircuitBreaker(left, right)
+-- a circuit breaker
+VAR
+  status      : {on, off};
+  break_left  : boolean;
+  break_right : boolean;
+
+ASSIGN
+  init(status) := on;
+
+INVAR
+  -- when the status is off, it breaks circuit for everyone
+  (status = off) -> !(break_left | break_right)
+
+INVAR
+  -- basic functionality of the cbr
+  break_left -> left.status = off
+
+INVAR
+  break_right -> right.status = off
