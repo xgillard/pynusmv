@@ -40,6 +40,7 @@ from tests.pynusmv.testTrace                       import TestTrace
 from tests.pynusmv.testTraceStep                   import TestTraceStep
 from tests.pynusmv.testWriteOnly                   import TestWriteOnly
 from tests.pynusmv.testWff                         import TestWff
+from tests.pynusmv.testBeMultiBitsVariables        import TestMultiBitsVariables
                                                    
 from tests.tools.bmcLTL.testParsing                import TestParsing
 from tests.tools.bmcLTL.testSemantics              import TestSemantics
@@ -76,6 +77,7 @@ def suite():
     suite.addTest(unittest.makeSuite(TestTraceStep))
     suite.addTest(unittest.makeSuite(TestWriteOnly))
     suite.addTest(unittest.makeSuite(TestWff))
+    suite.addTest(unittest.makeSuite(TestMultiBitsVariables))
     
     suite.addTest(unittest.makeSuite(TestParsing))
     suite.addTest(unittest.makeSuite(TestSemantics))

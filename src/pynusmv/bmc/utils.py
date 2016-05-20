@@ -313,17 +313,7 @@ def booleanize(name):
         table
     """
     symbol  = get_symbol(name)  
-    fsm     = bmcglob.master_be_fsm()
-    try:
-        # raises a KeyError when 'name' is not found
-        fsm.encoding.by_name[name]
-        # if found, its ok to just use 'symbol'
-        return [symbol]
-    except KeyError:
-        # the encoder doesn't know 'name' we need to find the bits
-        boolenc = _basenc.BoolEncClient_get_bool_enc(_beenc.BeEnc_ptr_to_BoolEncClient_ptr(fsm.encoding._ptr))
-        node_lst= NodeList(_boolenc.BoolEnc_get_var_bits(boolenc, symbol._ptr))
-        return list(node_lst)
+    return bmcglob.master_be_fsm().encoding.encode_to_bits(symbol)
 
 def make_nnf_boolean_wff(prop_node):
     """
@@ -689,6 +679,12 @@ def print_counter_example(fsm, problem, solver, k, descr="BMC counter example"):
     Prints a counter example for `problem` evaluated against `fsm` as identified
     by `solver` (problem has a length `k`) to standard output.
     
+    .. note::
+        
+        If you are looking for something more advanced, you might want to look
+        at :see:`pynusmv.be.encoder.BeEnc.decode_sat_model` which does the same
+        thing but is more complete.
+    
     :param fsm: the FSM against which problem was evaluated
     :param problem: the SAT problem used to identify a counter example
     :param solver: the SAT solver that identified a counter example
@@ -717,6 +713,12 @@ def generate_counter_example(fsm, problem, solver, k, descr="BMC counter example
     Generates a counter example for `problem` evaluated against `fsm` as 
     identified by `solver` (problem has a length `k`) but prints nothing.
     
+    .. note::
+        
+        If you are looking for something more advanced, you might want to look
+        at :see:`pynusmv.be.encoder.BeEnc.decode_sat_model` which does the same
+        thing but is more complete.
+    
     :param fsm: the FSM against which problem was evaluated
     :param problem: the SAT problem used to identify a counter example
     :param solver: the SAT solver that identified a counter example
@@ -742,6 +744,12 @@ def fill_counter_example(fsm, solver, k, trace):
     """
     Uses the given sat solver instance to fill the details of the trace and
     store it all in `trace`.
+    
+    .. note::
+        
+        If you are looking for something more advanced, you might want to look
+        at :see:`pynusmv.be.encoder.BeEnc.decode_sat_model` which does the same
+        thing but is more complete.
     
     .. note::
     

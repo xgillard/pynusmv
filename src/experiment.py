@@ -19,6 +19,43 @@ from pynusmv.collections import NodeList
 
 from enum import IntEnum
 
+def cnt_ex(solver):
+    enc = master_be_fsm().encoding
+    mgr = enc.manager
+    
+    def to_var_value(x):
+        try:
+            k = enc.at_index[mgr.cnf_literal_to_index(x)]
+            v = x > 0
+            return (k,v)
+        except:
+            return (None,None)
+        
+    valuation = map(to_var_value, solver.model)
+    
+    by_time = {}
+    for k,v in valuation:
+        if k is None:
+            continue
+        try:
+            bucket = by_time[k.time]
+        except:
+            bucket = []
+            by_time[k.time] = bucket
+            
+        bucket.append((str(k.name), v))
+    
+    return by_time
+
+def cnt_ex_str(solver):
+    res = cnt_ex(solver)
+    out = ""
+    for k in res:
+        out+="{}\n".format(k)
+        for v, b in res[k]:
+            out+="     {} = {}\n".format(v, b)
+             
+    print(out)
 
 def mk_new_encoder(sexp_fsm):
     """

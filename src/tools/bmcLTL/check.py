@@ -10,7 +10,7 @@ from tools.bmcLTL.gen   import generate_problem
 def check_ltl_onepb(fml, length, no_fairness=False, no_invar=False):
     """
     This function verifies that the given FSM satisfies the given property
-    (specified as text) for paths with an exact length of `length`.
+    for paths with an exact length of `length`.
     
     :param fml: an LTL formula parsed with `tools.bmcLTL.parsing` (hence the 
         abstract syntax tree of that formula). Note, this is *NOT* the NuSMV

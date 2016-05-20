@@ -1,0 +1,34 @@
+MODULE main
+-- a simple setup with three cbr in a hierarchy and four observable leds
+VAR
+  power: boolean;
+  cbr0 : CBR(power);
+  
+  
+  cbr1 : CBR(cbr0.status = on & ! cbr0.brk_left);
+  led0 : LED(cbr1.status = on & ! cbr1.brk_left);
+  led1 : LED(cbr1.status = on & ! cbr1.brk_right);
+
+  cbr2 : CBR(cbr0.status = on & ! cbr0.brk_right);
+  led3 : LED(cbr2.status = on & ! cbr2.brk_left);
+  led4 : LED(cbr2.status = on & ! cbr2.brk_right);
+
+ASSIGN
+  init(power) := TRUE;
+
+MODULE CBR(power_cond)
+VAR 
+  status   : {on, off};
+  brk_left : boolean;
+  brk_right: boolean;
+ASSIGN
+  init(brk_left)  := FALSE;
+  init(brk_right) := FALSE;
+
+INVAR status = on <-> power_cond
+
+MODULE LED(power_cond)
+VAR 
+  status : {on, off};
+
+INVAR status = on <-> power_cond

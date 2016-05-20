@@ -20,7 +20,7 @@ from functools             import reduce
 from pynusmv.init          import init_nusmv
 from pynusmv.glob          import load, master_bool_sexp_fsm
 from pynusmv.parser        import parse_simple_expression
-from pynusmv.node          import Node  
+from pynusmv.node          import Node, Identifier  
 from pynusmv.bmc.glob      import BmcSupport, master_be_fsm
 from pynusmv.be.expression import Be
 from pynusmv.bmc.utils     import BmcModel,                    \
@@ -70,8 +70,7 @@ def arguments():
                       default=[], 
                       help="Make the symbol passed as argument visible in the " +\
                       "current diagnosability test. This option can be repeated"+\
-                      "at will to have multiple visible variables. (By default "+\
-                      "only the input variables IVAR are considered visible)")
+                      "at will to have multiple visible variables.")
     args.add_argument("-k", "--bound",
                       type=int,
                       default=10,
@@ -242,7 +241,40 @@ def generate_sat_problem(observable_vars, formula_nodes, length):
                                     formula_nodes, offset_1, offset_2, length)
     return problem
 
-def verify_for_size_exactly_k(observable_vars, formula_nodes, k):
+def diagnosability_violation(observable_names, solver, k):
+    """
+    """
+    lexicographically = lambda x: str(x) 
+    be_enc = master_be_fsm().encoding
+    decoded= be_enc.decode_sat_model(solver.model)
+     
+    # create the trace that will actually get returned
+    counter_ex = "############### DIAGNOSABILITY VIOLATION ############\n"
+    
+    # because step indices start at one
+    for time in range(k+1):
+        counter_ex+= "*************** TIME {:03} ****************************\n".format(time)
+        counter_ex+= "--------------- OBSERVABLE STATE --------------------\n"
+        # add all observable values.
+        for symbol in sorted(decoded[time].keys(), key=lexicographically):
+            if str(symbol) in observable_names:
+                counter_ex+="{} = {}\n".format(symbol, decoded[time][symbol])
+        
+        counter_ex+= "--------------- BELIEF STATE A ----------------------\n"
+        # add all non-observable values of the belief STATE A___
+        for symbol in sorted(decoded[time].keys(), key=lexicographically):
+            if str(symbol) not in observable_names:
+                counter_ex+="{} = {}\n".format(symbol, decoded[time][symbol])
+        
+        counter_ex+= "--------------- BELIEF STATE B ----------------------\n"
+        # add all non-observable values of the belief STATE B___
+        for symbol in sorted(decoded[k+1+time].keys(), key=lexicographically):
+            if str(symbol) not in observable_names:
+                counter_ex+="{} = {}\n".format(symbol, decoded[1+k+time][symbol])
+    
+    return counter_ex
+
+def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, k):
     """
     Performs the verification of the diagnosability problem for `formula_node`
     when a maximum of `k` execution steps are allowed.
@@ -256,58 +288,18 @@ def verify_for_size_exactly_k(observable_vars, formula_nodes, k):
         and a counter example when one could be identified.
     """
     problem = generate_sat_problem(observable_vars, formula_nodes, k)
-    problem_= problem.inline(True)  # remove potentially redundant information
-    cnf     = problem_.to_cnf()
+    #problem_= problem.inline(True)  # remove potentially redundant information
+    #cnf     = problem_.to_cnf()
+    cnf     = problem.to_cnf()
     
     solver  = SatSolverFactory.create()
     solver += cnf
     solver.polarity(cnf, Polarity.POSITIVE)
     
     if solver.solve() == SatSolverResult.SATISFIABLE:
-        fsm = master_be_fsm()
-        return generate_counter_example(fsm, problem, solver, k, "Violation trace")
+        return diagnosability_violation(observable_names, solver, k)
     else:
         return "No Violation"
-    
-def sanitize_counter_example(observable_names, cnt_ex):
-    """
-    Removes all invisible state variables from the counter example trace so that
-    only the visible behavior can be seen from the trace.
-    
-    :param observable_names: the set of names of the variables which are
-        considered visible in the scope of this diagnosability test
-    :param cnt_ex: the counter example to sanitize
-    """
-    scalar_fsm = master_bool_sexp_fsm()
-    counter_ex = Trace.create(
-                    "Violation Trace", TraceType.COUNTER_EXAMPLE, 
-                    scalar_fsm.symbol_table, 
-                    scalar_fsm.symbols_list, 
-                    True)
-    
-    if not observable_names:
-        # nothing can be observed, the trace will be empty
-        return counter_ex
-    
-    # because the step indices start at one.
-    counter = 1
-    for step in cnt_ex:
-        # you only want to add a visible step if there is somethiong 'visible'
-        # in it. So this flag is just turned on when a visible item is added
-        # and it is reset at the beginning of every other step
-        addition = False
-        for symbol in cnt_ex.symbols:
-            value = step.value[symbol]
-            if (value is not None) and (str(symbol) in observable_names):
-                try:
-                    counter_ex.steps[counter].assign(symbol, value)
-                    addition = True
-                except: 
-                    counter_ex.append_step().assign(symbol, value)
-                    addition = True
-        if addition:
-            counter+=1
-    return counter_ex
 
 def check(args, condition_text, observable):
     """
@@ -320,20 +312,21 @@ def check(args, condition_text, observable):
     :param observable: the set of symbols considered observable in the context
         of this diagnosability test
     """
-    try:
+    #try:
+    if True:
         observable_vars          = mk_observable_vars(observable)
         diagnosability_condition = mk_specs_nodes(condition_text)
         for k in range(args.bound+1):
-            result = verify_for_size_exactly_k(observable_vars, diagnosability_condition, k) 
+            result = verify_for_size_exactly_k(observable, observable_vars, diagnosability_condition, k) 
             if "No Violation" != str(result):
                 print("-- {} is *NOT* diagnosable for length {}".format(diagnosability_condition, k))
-                print(sanitize_counter_example(observable, result))
+                print(result)
                 return
         print("-- No counter example found for executions of length <= {}".format(k))
         
-    except Exception as e:
-        print("The specified condition contains a syntax error")
-        print(e)
+#     except Exception as e:
+#         print("The specified condition contains a syntax error")
+#         print(e)
 
 def print_greeting(model, observable):
     """

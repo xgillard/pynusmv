@@ -141,28 +141,29 @@ class TestDiagnosability(TestCase):
             self.assertEqual(SatSolverResult.SATISFIABLE, solver.solve())
 
     def test_verify_exactly(self):
-        observable = diagnosability.mk_observable_vars(["mouse"])
+        obs_names = ["mouse"]
+        obs_vars  = diagnosability.mk_observable_vars(obs_names)
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
         
         for i in range(5):
-            res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), i)
+            res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), i)
             self.assertEqual("No Violation", res)
         
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = highlight"))
         
-        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 0)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 0)
         self.assertEqual("No Violation", res)
         
-        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 1)
-        self.assertIsInstance(res, Trace)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 1)
+        self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 2)
-        self.assertIsInstance(res, Trace)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 2)
+        self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(observable, (f1, f2), 3)
-        self.assertIsInstance(res, Trace)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 3)
+        self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
     def test_mk_observable_vars(self):
         enc = master_be_fsm().encoding

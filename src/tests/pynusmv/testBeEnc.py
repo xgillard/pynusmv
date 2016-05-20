@@ -252,4 +252,8 @@ class TestBeEnc(unittest.TestCase):
         string_repr += "|        7 |         0 |     1 | next(v)        |\n"
         string_repr += "+----------+-----------+-------+----------------+\n"
         self.assertEquals(string_repr, str(self._TESTED))
-        pass
+        
+    def test__bool_enc(self):
+        # the point of this test is only to verify it doesn't crash
+        self.assertIsNotNone(self._TESTED._bool_enc)
+    

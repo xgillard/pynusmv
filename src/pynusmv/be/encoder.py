@@ -23,11 +23,13 @@ __all__ = ['BeEnc', 'BeVarType', 'BeWrongVarType' ]
 from pynusmv.nusmv.enc      import enc  as _enc  
 from pynusmv.nusmv.enc.be   import be   as _be
 from pynusmv.nusmv.enc.base import base as _base
+from pynusmv.nusmv.enc.bool import bool  as _bool
 
 from enum                   import IntEnum
 from collections            import Iterator 
 from pynusmv.node           import Node
 from pynusmv.utils          import PointerWrapper, indexed
+from pynusmv.collections    import NodeList 
 from pynusmv.fsm            import SymbTable
 from pynusmv.be.expression  import Be
 from pynusmv.be.manager     import BeRbcManager
@@ -125,10 +127,49 @@ class BeVar:
     @property
     def name(self):
         """
-        :return: the name node corresponding to this variable (in the symb table)
+        Returns the name of this BOOLEAN variable. If this variable was not
+        declared boolean in the SMV text, this is going to be the name of one
+        of the bits composing that variable. 
+        
+        :return: the name node corresponding to this boolean variable.
         """
         ptr = _be.BeEnc_index_to_name(self.encoding._ptr, self.untimed.index)
         return Node.from_ptr(ptr)
+    
+    @property
+    def is_bit(self):
+        """
+        This property is true iff this BeVar is ONE bit of a variable. That
+        is to say, if this BeVar does not denote a complete variable from the 
+        SMV text because it was booleanized and encoded as a set of bits.
+        
+        .. note::
+        
+            If this property is true, then the name of this variable as it was
+            declared in the SMV text can be retrieved using the :see:`scalar` 
+            property.
+        
+        :return: True iff this BeVar represents only one bit of a variable in 
+            the SMV text.
+        """
+        bool_enc = self.encoding._bool_enc
+        return bool(_bool.BoolEnc_is_var_bit(bool_enc, self.name._ptr))
+    
+    @property
+    def scalar(self):
+        """
+        Returns the name node of this variable as it was declared in the SMV 
+        text (hence not the name of the bit, but the name of the variable).
+        
+        :see:`is_bit`
+        :return: the name node corresponding to scalar using this variable.
+        """
+        bool_enc = self.encoding._bool_enc
+        if self.is_bit:
+            scalar = _bool.BoolEnc_get_scalar_var_from_bit(bool_enc, self.name._ptr) 
+            return Node.from_ptr(scalar)
+        else:
+            return self.name
     
     @property 
     def time(self):
@@ -430,6 +471,22 @@ class BeEnc(PointerWrapper):
             _be.BeEnc_destroy(self._ptr)
             self._freeit = False
             self._ptr    = None
+    
+    @property
+    def _bool_enc(self):
+        """
+        Returns the boolean encoding which serves for the conversion to of 
+        variables to bits in the underlying system.
+        
+        .. warning::
+            
+            The returned value of this property method is a plain raw SWIG
+            pointer wrapper. This property is for INTERNAL USE ONLY !!
+            
+        :return: a swig pointer corresponding to the bool enc used by this 
+            encoder.
+        """
+        return _be.BeEnc_ptr_get_bool_enc(self._ptr)
     
     @staticmethod
     def global_singleton_instance():
@@ -770,6 +827,127 @@ class BeEnc(PointerWrapper):
                                                       start, 
                                                       end)
         return Be(ptr, self.manager)
+    
+    def encode_to_bits(self, name_node):
+        """
+        Returns the list of bits variable names used to encode the SMV variable
+        denoted by `name_node` in the boolean model.
+        
+        :param name_node: the node symbol representing the expression to break
+            down to bits.
+        :return: the list of bits names (in the form of nodes) which are used
+            to encode `name_node`.
+        """
+        try:
+            # raises a KeyError when 'name' is not found
+            self.by_name[str(name_node)]
+            # if found, its ok to just use 'symbol'
+            return [name_node]
+        except KeyError:
+            # the encoder doesn't know 'name' we need to find the bits
+            boolenc = self._bool_enc
+            node_lst= NodeList(_bool.BoolEnc_get_var_bits(boolenc, name_node._ptr))
+            return list(node_lst)
+    
+    def decode_value(self, list_of_bits_and_value):
+        """
+        Returns a node (:see:`pynusmv.node.Node`) corresponding to the value of
+        the variable encoded by the list of bits and values.
+        
+        :param list_of_bits_and_value: a sequence of tuples (BeVar, BooleanValue)
+            which represent a bit and its value.
+        :return: an intelligible value node corresponding to what these bits
+            means when interpreted in the context of the SMV model.
+        """
+        if not list_of_bits_and_value:
+            raise ValueError("The given list of bits and values must at least "+
+                             "contain one bit")
+        # if the variable to be decoded is boolean in the model 
+        if not list_of_bits_and_value[0][0].is_bit:
+            return list_of_bits_and_value[0][1]
+        
+        # otherwise decode the bits
+        bool_enc = self._bool_enc
+        scalar   = list_of_bits_and_value[0][0].scalar
+        
+        bv = _bool.BitValues_create(bool_enc, scalar._ptr)
+        for bit,val in list_of_bits_and_value:
+            bit_index = _bool.BoolEnc_get_index_from_bit(bool_enc, bit.name._ptr)
+            _bool.BitValues_set(bv, bit_index, val)
+            
+        result_ptr = _bool.BoolEnc_get_value_from_var_bits(bool_enc, bv)
+        
+        _bool.BitValues_destroy(bv)
+        return Node.from_ptr(result_ptr)
+    
+    def decode_sat_model(self, sat_model):
+        """
+        Decodes the given `sat_model` and translates it in a sequence of 
+        valuations. Concretely, the returned value is a multi-level dictionary
+        with the following structure: time_block -> scalar_name -> decoded_value
+        
+        :param sat_model: the dimacs model generated by a sat solver to satisfy
+            some given property.
+        :return: a multi-level map time_block -> scalar_name -> decoded_value
+            representing the content of the sat_model
+        """
+        mgr = self.manager
+        
+        def _to_var_value(x):
+            """Internal function, converts dimacs literal to a variable"""
+            try:
+                k = self.at_index[mgr.cnf_literal_to_index(abs(x))]
+                v = x > 0
+                return (k,v)
+            except:
+                return (None,None)
+        
+        def _group_by_time(valuation):
+            """Internal function, groups the variables in time blocks"""
+            result = {}
+            for k,v in valuation:
+                if k is None:
+                    continue
+                if k.time not in result:
+                    result[k.time] = []    
+                result[k.time].append((k, v))
+            return result
+        
+        def _group_by_scalar(timed):
+            """
+            Internal function, inside each block, group bits by scalar to which
+            they relate
+            """
+            result = {}
+            for tm in timed.keys():
+                result[tm] = {}
+                for var,value in timed[tm]:
+                    scalar = str(var.scalar)
+                    if scalar not in result[tm]:
+                        result[tm][scalar] = [(var, value)]
+                    else:
+                        result[tm][scalar].append((var,value))
+            return result
+        
+        def _decode(by_time_and_scalar):
+            """
+            Internal function, decodes the bits of each scalar var within each
+            time block
+            """
+            result = {}
+            for tm in by_time_and_scalar.keys():
+                result[tm] = {}
+                for scalar in by_time_and_scalar[tm].keys(): 
+                    result[tm][scalar] = self.decode_value(by_time_and_scalar[tm][scalar])
+            return result
+        
+        # use the above internal functions
+        valuation = [_to_var_value(x) for x in sat_model]
+        by_time   = _group_by_time(valuation)
+        by_scalar = _group_by_scalar(by_time)
+        decoded   = _decode(by_scalar)
+               
+        return decoded
     
     # =========================================================================
     # ========== Magic methods ======================================================
