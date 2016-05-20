@@ -97,7 +97,9 @@ def mk_observable_names(args):
     
     # handle the --observable-inputs (-oi) command line flag
     if args.observable_inputs:
-        observable = observable | set(master_be_fsm().encoding.input_variables)
+        scalr_name = lambda x: str(x.scalar)
+        input_vars = map(scalr_name, master_be_fsm().encoding.input_variables)
+        observable = observable | set(input_vars)
     
     # handle the external config file (--observable-file // -of) and the
     # multiple --observable-regex (-or) command line options 
@@ -288,9 +290,8 @@ def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, 
         and a counter example when one could be identified.
     """
     problem = generate_sat_problem(observable_vars, formula_nodes, k)
-    #problem_= problem.inline(True)  # remove potentially redundant information
-    #cnf     = problem_.to_cnf()
-    cnf     = problem.to_cnf()
+    problem_= problem.inline(True)  # remove potentially redundant information
+    cnf     = problem_.to_cnf()
     
     solver  = SatSolverFactory.create()
     solver += cnf
@@ -312,8 +313,7 @@ def check(args, condition_text, observable):
     :param observable: the set of symbols considered observable in the context
         of this diagnosability test
     """
-    #try:
-    if True:
+    try:
         observable_vars          = mk_observable_vars(observable)
         diagnosability_condition = mk_specs_nodes(condition_text)
         for k in range(args.bound+1):
@@ -324,9 +324,9 @@ def check(args, condition_text, observable):
                 return
         print("-- No counter example found for executions of length <= {}".format(k))
         
-#     except Exception as e:
-#         print("The specified condition contains a syntax error")
-#         print(e)
+    except Exception as e:
+        print("The specified condition contains a syntax error")
+        print(e)
 
 def print_greeting(model, observable):
     """
