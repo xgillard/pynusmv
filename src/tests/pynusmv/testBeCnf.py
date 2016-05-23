@@ -169,7 +169,8 @@ class TestBeCnf(unittest.TestCase):
         w  = self._fsm.encoding.by_name['w'].boolean_expression
         
         cnf= (w.imply(v)).to_cnf(Polarity.POSITIVE)
-        self.assertEqual("formula literal = X5 <-> (X1 | !X3)", str(cnf))
+        self.assertTrue(str(cnf) in ["formula literal = X5 <-> (X1 | !X3)", 
+                                      "formula literal = X5 <-> (!X3 | X1)"])
         
         cnf= (w.imply(v)).to_cnf(Polarity.NEGATIVE)
         # ! ( w => v ) <=> ! ( !w | v)
