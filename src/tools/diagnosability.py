@@ -48,6 +48,10 @@ def arguments():
     """)
     args.add_argument("model", 
                     help="The model to load")
+    
+    args.add_argument("-q", "--quiet", action="store_true", 
+                      help="Quiet mode: disable the verbose greeting outputs")
+    
     args.add_argument("-s", "--spec", 
                       help="The property whose diagnosability needs to be verified"+\
                            "diagnosability condition *NEED* to be separated by a semicolon")
@@ -460,12 +464,13 @@ def proceed(args):
     with init_nusmv():
         load(args.model)
         with BmcSupport():
-            with open(args.model) as m:
-                model = m.read()
-                
+            
             observable = mk_observable_names(args)
             
-            print_greeting(model, observable)
+            if not args.quiet:
+                with open(args.model) as m:
+                    model = m.read()
+                print_greeting(model, observable)
             
             if args.spec is not None:
                 check(args, args.spec, observable)
