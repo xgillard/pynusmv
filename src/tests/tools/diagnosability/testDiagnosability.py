@@ -126,7 +126,7 @@ class TestDiagnosability(TestCase):
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
          
         for i in range(5):
-            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12, sigma_12)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -139,7 +139,7 @@ class TestDiagnosability(TestCase):
         for i in range(1, 4): 
             # length zero has no input => only an initial state and the 
             # diagnosability condition is not checked
-            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12, sigma_12)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -159,22 +159,22 @@ class TestDiagnosability(TestCase):
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
         
         for i in range(5):
-            res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), i, theta, sigma_12)
+            res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), i, theta, sigma_12, sigma_12)
             self.assertEqual("No Violation", res)
         
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = highlight"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 0, theta, sigma_12)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 0, theta, sigma_12, sigma_12)
         self.assertEqual("No Violation", res)
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 1, theta, sigma_12)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 1, theta, sigma_12, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 2, theta, sigma_12)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 2, theta, sigma_12, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 3, theta, sigma_12)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 3, theta, sigma_12, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
     def test_mk_observable_vars(self):
@@ -199,15 +199,33 @@ class TestDiagnosability(TestCase):
         
     def test_constraint_context_sigma(self):
         fsm   = master_be_fsm()
+        
+        _true = Node.from_ptr(parse_ltl_spec("TRUE"))
+        _true = bmcutils.make_nnf_boolean_wff(_true)
+        _truen= _true.to_node()
+        
         cond  = Wff(parse_ltl_spec("G !(mouse = hover)"))\
                     .to_boolean_wff()\
                     .to_negation_normal_form()
         off_1 = 0
         off_2 = 2
         length= 1
+         
+        # sigma1
+        problem = diagnosability.generate_sat_problem([], (_truen, _truen), length, _true, cond.to_node(), _truen)
+        tm_cond = ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_1)
         
-        sigma = diagnosability.constraint_context_interesting_traces(cond.to_node(), off_1, off_2, length)
-        manual= ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_1)\
-            & ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_2)
-                
-        self.assertEqual(tests.canonical_cnf(sigma), tests.canonical_cnf(manual))
+        canonical_p = tests.canonical_cnf(problem)
+        canonical_f = tests.canonical_cnf(tm_cond)
+        
+        self.assertTrue(all(clause in canonical_p for clause in canonical_f))
+        
+        # sigma2
+        problem = diagnosability.generate_sat_problem([], (_truen, _truen), length, _true, _truen, cond.to_node())
+        tm_cond = ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_2)
+        
+        canonical_p = tests.canonical_cnf(problem)
+        canonical_f = tests.canonical_cnf(tm_cond)
+        
+        self.assertTrue(all(clause in canonical_p for clause in canonical_f))
+        

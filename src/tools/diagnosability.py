@@ -91,11 +91,45 @@ def arguments():
                       " imposed on the initial state."                          +\
                       "Warning: No temporal formula is allowed here")
     
-    args.add_argument("-t", "--trace-context", default="TRUE", 
+    
+    args.add_argument("-s1", "--sigma1", type=str,
+                      help="An LTL formula which is used to constrain the trace"+\
+                      " of the first member of the critical pair. Note: this "  +\
+                      "option is mutually exclusive with --sigma12")
+    args.add_argument("-s2", "--sigma2", type=str,
+                      help="An LTL formula which is used to constrain the trace"+\
+                      " of the second member of the critical pair. Note: this " +\
+                      "option is mutually exclusive with --sigma12")
+    
+    args.add_argument("-s12", "--sigma12", type=str,
                       help="The trace part of the diagnosability context. This "+\
                       "option is used to force the diagnosability test to be "  +\
-                      "done in a certain context which is considered interesting")
-    return args.parse_args()
+                      "done in a certain context which is considered "          +\
+                      "interesting. (Default value: TRUE to not constrain the  "+\
+                      "traces in any way). Note: this option is mutually "      +\
+                      "exclusive --sigma1 and --sigma2 since it forces both "   +\
+                      "sides of the critical pair to satisfy the same trace "   +\
+                      "context.")
+    
+    parsed_args = args.parse_args()
+    
+    # custom vality check
+    if (parsed_args.sigma1  is not None) &\
+       (parsed_args.sigma2  is not None) &\
+       (parsed_args.sigma12 is not None):
+        print("Wrong usage: use either (--sigma1 and --sigma2) xor --sigma12")
+        exit(1)
+    if ((parsed_args.sigma1 is not None) & (parsed_args.sigma2 is None)) \
+    or ((parsed_args.sigma1 is None) & (parsed_args.sigma2 is not None)):
+        print("Wrong usage: --sigma1 and --sigma2 MUST be used together")
+        exit(1)
+    if (parsed_args.sigma1  is None) &\
+       (parsed_args.sigma2  is None) &\
+       (parsed_args.sigma12 is None):
+        parsed_args.sigma1 = "TRUE"
+        parsed_args.sigma2 = "TRUE"
+    
+    return parsed_args
 
 def mk_observable_names(args):
     """
@@ -259,25 +293,7 @@ def constraint_context_theta_initial(initial_condition, offset_path1, offset_pat
     w02 = enc.shift_to_time(initial_condition.to_be(enc), offset_path2)
     return w01 & w02
 
-# sigma_12
-def constraint_context_interesting_traces(trace_spec, offset_path1, offset_path2, length):
-    """
-    Generates the sigma_12 part of the context constraint. That is to say, the 
-    shape of the traces that are considered relevant for the dagnosability test.
-    
-    :param trace_spec: a Node representing an LTL formula describing the shape
-         condition to be of the trace to be enforced for the considered traces.
-    :param offset_path1: the offset at which path 1 is supposed to start (should be 0)
-    :param offset_path2: the offset at which path 2 is supposed to start (must not intersect with path1)
-    :param length: the length of the path
-    :return: the sigma_12 part of the context constraint encoded in the form of 
-        a boolean expression.
-    """
-    fsm = master_be_fsm()
-    return ( bounded_semantics_at_offset(fsm, trace_spec, length, offset_path1) 
-           & bounded_semantics_at_offset(fsm, trace_spec, length, offset_path2) ) 
-
-def generate_sat_problem(observable_vars, formula_nodes, length, theta, sigma_12):
+def generate_sat_problem(observable_vars, formula_nodes, length, theta, sigma1, sigma2):
     """
     Generates a SAT problem which is satisfiable iff the given `formula` is 
     *NOT* diagnosable for the loaded model for traces of length `length`.
@@ -289,22 +305,28 @@ def generate_sat_problem(observable_vars, formula_nodes, length, theta, sigma_12
     :param length: the maximum length of the generated traces.
     :param theta: the initial condition placed on the initial belief state 
         (in the form of a :see:`pynusmv.node.Node`)
-    :param sigma_12: the shape of the traces considered relevant for the 
-        ongoing diagnosability test (in the form of a :see:`pynusmv.node.Node`)
+    :param sigma1: the shape of the traces considered relevant for the first
+        member of the critical pair in the ongoing diagnosability test 
+        (in the form of a :see:`pynusmv.node.Node`)
+    :param sigma2: the shape of the traces considered relevant for the second
+        member of the critical pair in the ongoing diagnosability test 
+        (in the form of a :see:`pynusmv.node.Node`)
     :return: a SAT problem which is satisfiable iff the given formula is not
         diagnosable on the loaded model.
     """
+    fsm = master_be_fsm()
     offset_1  = 0
     offset_2  = length +1
     
     problem = generate_path(offset_1, length) & generate_path(offset_2, length) \
             & constraint_same_observations(
                                     observable_vars, offset_1, offset_2, length)\
-            & constraint_eventually_critical_pair(
-                                    formula_nodes, offset_1, offset_2, length)  \
             & constraint_context_theta_initial(theta, offset_1, offset_2)       \
-            & constraint_context_interesting_traces(sigma_12, offset_1, offset_2, length)
-             
+            & bounded_semantics_at_offset(fsm, sigma1, length, offset_1)        \
+            & bounded_semantics_at_offset(fsm, sigma2, length, offset_2)        \
+            & constraint_eventually_critical_pair(
+                                    formula_nodes, offset_1, offset_2, length)
+
     return problem
 
 def diagnosability_violation(observable_names, solver, k):
@@ -348,7 +370,7 @@ def diagnosability_violation(observable_names, solver, k):
     
     return counter_ex
 
-def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, k, theta, sigma_12):
+def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, k, theta, sigma1, sigma2):
     """
     Performs the verification of the diagnosability problem for `formula_node`
     when a maximum of `k` execution steps are allowed.
@@ -360,12 +382,16 @@ def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, 
     :param k: the maximum length of the generated traces.
     :param theta: the initial condition placed on the initial belief state 
         (in the form of a :see:`pynusmv.node.Node`)
-    :param sigma_12: the shape of the traces considered relevant for the 
-        ongoing diagnosability test (in the form of a :see:`pynusmv.node.Node`) 
+    :param sigma1: the shape of the traces considered relevant for the first
+        member of the critical pair in the ongoing diagnosability test 
+        (in the form of a :see:`pynusmv.node.Node`)
+    :param sigma2: the shape of the traces considered relevant for the second
+        member of the critical pair in the ongoing diagnosability test 
+        (in the form of a :see:`pynusmv.node.Node`) 
     :return: the text 'No Violation' if no counter example could be found, 
         and a counter example when one could be identified.
     """
-    problem = generate_sat_problem(observable_vars, formula_nodes, k, theta, sigma_12)
+    problem = generate_sat_problem(observable_vars, formula_nodes, k, theta, sigma1, sigma2)
     problem_= problem.inline(True)  # remove potentially redundant information
     cnf     = problem_.to_cnf()
     
@@ -396,11 +422,14 @@ def check(args, condition_text, observable):
         theta = Node.from_ptr(parse_simple_expression(args.initial_condition))
         theta = make_nnf_boolean_wff(theta)
         
-        sigma_12= Node.from_ptr(parse_ltl_spec(args.trace_context))
-        sigma_12= make_nnf_boolean_wff(sigma_12).to_node()
+        sigma1= Node.from_ptr(parse_ltl_spec(args.sigma1))
+        sigma1= make_nnf_boolean_wff(sigma1).to_node()
+        
+        sigma2= Node.from_ptr(parse_ltl_spec(args.sigma2))
+        sigma2= make_nnf_boolean_wff(sigma2).to_node()
         
         for k in range(args.bound+1):
-            result = verify_for_size_exactly_k(observable, observable_vars, diagnosability_condition, k, theta, sigma_12) 
+            result = verify_for_size_exactly_k(observable, observable_vars, diagnosability_condition, k, theta, sigma1, sigma2) 
             if "No Violation" != str(result):
                 print("-- {} is *NOT* diagnosable for length {}".format(diagnosability_condition, k))
                 print(result)
