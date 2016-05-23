@@ -5,11 +5,16 @@ to the translation of formulas to boolean expressions corresponding to the
 SAT problem necessary to verify these using LTL bounded semantics of the dumping
 of problem to file (in DIMACS format)
 """
-from pynusmv.nusmv.bmc     import bmc as _bmc
+from pynusmv.nusmv.bmc           import bmc as _bmc
+from pynusmv.nusmv.node          import node as _node
 
-from pynusmv.be.expression import Be 
-from pynusmv.exception     import NuSmvSatSolverError 
-from pynusmv.bmc           import utils 
+from pynusmv.nusmv.parser.parser import (AND, OR, XOR, NOT, IMPLIES, IFF, \
+                                         OP_NEXT, OP_GLOBAL, OP_FUTURE, UNTIL, RELEASES)
+from pynusmv.node                import Node  
+from pynusmv.wff                 import Wff 
+from pynusmv.be.expression       import Be 
+from pynusmv.exception           import NuSmvSatSolverError 
+from pynusmv.bmc                 import utils 
 
 __all__ = ['check_ltl',
            'check_ltl_incrementally',
@@ -19,6 +24,9 @@ __all__ = ['check_ltl',
            'bounded_semantics_single_loop',
            'bounded_semantics_all_loops_optimisation_depth1',
            'bounded_semantics_all_loops',
+           'bounded_semantics_without_loop_at_offset',
+           'bounded_semantics_with_loop_at_offset',
+           'bounded_semantics_at_offset',
            'dump_dimacs_filename',
            'dump_dimacs'
            ]
@@ -449,7 +457,298 @@ def bounded_semantics_all_loops(fsm, prop_node, bound, loop, optimized=True):
     else:
         be_ptr = _bmc.Bmc_Tableau_GetAllLoops(fsm._ptr, ltl_wff._ptr, bound, loop)
         return Be(be_ptr, fsm.encoding.manager)
+    
+   
+###############################################################################
+############ Offset-ed Bounded semantics of a formula #########################
+###############################################################################
+
+def car(this_node):
+    """
+    Returns the lhs branch of this node. 
+
+    .. note::
+
+        This is a simple workaround of `Node.car` which does not behave as expected.
+
+    :param this_node: the node whose lhs (car) is wanted.
+    :return: the lhs member of this node.
+    """
+    return Node.from_ptr(_node.car(this_node._ptr))
+
+def cdr(this_node):
+    """
+    Returns the rhs branch of this node. 
+
+    .. note::
+
+        This is a simple workaround of `Node.cdr` which does not behave as expected.
+
+    :param this_node: the node whose rhs (cdr) is wanted.
+    :return: the rhs member of this node.
+    """
+    return Node.from_ptr(_node.cdr(this_node._ptr))
+
+def bounded_semantics_without_loop_at_offset(fsm, formula, time, bound, offset):
+    """
+    Generates the Be [[formula]]^{time}_{bound} corresponding to the bounded semantic 
+    of `formula` when there is no loop on the path but encodes it with an `offset` long shift 
+    in the timeline of the encoder.
+
+    .. note:: 
+
+        This function plays the same role as `bounded_semantics_without_loop` but allows to 
+        position the time blocks at some place we like in the encoder timeline. This is mostly
+        helpful if you want to devise verification methods that need to have multiple parallel
+        verifications. (ie. diagnosability).
+
+        Note however, that the two implementations are different.
+
+    .. warning::
+
+        So far, the only supported temporal operators are F, G, U, R, X
+
+    :param fsm: the BeFsm for which the property will be verified. Actually, it is only used to 
+        provide the encoder used to assign the variables to some time blocks. The api was kept 
+        this ways to keep uniformity with its non-offsetted counterpart.
+    :param formula: the property for which to generate a verification problem
+        represented in a 'node' format (subclass of :see::class:`pynusmv.node.Node`)
+        which corresponds to the format obtained from the ast. (remark: if you
+        need to manipulate [ie negate] the formula before passing it, it is
+        perfectly valid to pass a node decorated by `Wff.decorate`).
+    :param time: the logical time at which the semantics is to be evaluated. (Leave out the offset for
+        this param. If you intend the 3rd state of a trace, say time 2).
+    :param bound: the logical time bound to the problem. (Leave out the offset for this param: if you
+        intend to have a problem with at most 10 steps, say bound=10)
+    :param offset: the time offset in the encoding block where the sem of this formula will be 
+        generated.
+    :return: a Be corresponding to the semantics of `formula` at `time` for a problem with a maximum
+        of `bound` steps encoded to start at time `offset` in the `fsm` encoding timeline.
+    """
+    if time < 0:
+        raise ValueError("Time must be a positive integer")
+    if bound< 0:
+        raise ValueError("Bound must be a positive integer")
+    if offset<0:
+        raise ValueError("The offset must be a positive integer")
+
+    enc = fsm.encoding
+    if time > bound:
+        return Be.false(enc.manager)
+    # propositional logic
+    elif formula.type == AND:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        right= bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        return left & right
+    elif formula.type == OR:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        right= bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        return left | right
+    elif formula.type == XOR:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        right= bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        return left ^ right
+    elif formula.type == NOT:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        return -left
+    elif formula.type == IMPLIES:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        right= bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        return left.imply(right)
+    elif formula.type == IFF:
+        left = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        right= bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        return left.iff(right)
+    # linear temporal logic
+    elif formula.type == OP_NEXT:
+        return bounded_semantics_without_loop_at_offset(fsm, car(formula), time+1, bound, offset)
+    elif formula.type == OP_GLOBAL:
+        return Be.false(enc.manager)
+    elif formula.type == OP_FUTURE:
+        now = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        then= bounded_semantics_without_loop_at_offset(fsm, formula, time+1, bound, offset)
+        return now | then
+    elif formula.type == UNTIL:
+        psi = bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        phi = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        then= bounded_semantics_without_loop_at_offset(fsm, formula, time+1, bound, offset)
+        return psi | (phi & then)
+    elif formula.type == RELEASES:
+        # In Baier & Katoen (p. 257), the unrolling of the RELEASES operator is defined as :
+        # (phi R psi) :=: psi & ( phi | X(phi R psi))
+        phi = bounded_semantics_without_loop_at_offset(fsm, car(formula), time, bound, offset)
+        psi = bounded_semantics_without_loop_at_offset(fsm, cdr(formula), time, bound, offset)
+        then= bounded_semantics_without_loop_at_offset(fsm, formula, time+1, bound, offset)
+        return psi & (phi | then)
+    # basic proposition
+    else:
+        expr = Wff.decorate(formula).to_boolean_wff().to_be(enc)
+        return enc.shift_to_time(expr, offset+time)
+    
+def bounded_semantics_with_loop_at_offset(fsm, formula, time, bound, loop, offset):
+    """
+    Generates the Be _{loop}[[formula]]^{time}_{bound} corresponding to the bounded semantic 
+    of `formula` when a loop starts at time 'loop' on the path but encodes it with an `offset`
+    long shift in the timeline of the encoder.
+
+    .. note:: 
+
+        This function plays the same role as `bounded_semantics_with_loop` but allows to 
+        position the time blocks at some place we like in the encoder timeline. This is mostly
+        helpful if you want to devise verification methods that need to have multiple parallel
+        verifications. (ie. diagnosability).
+
+        Note however, that the two implementations are different.
+
+    .. warning::
+
+        So far, the only supported temporal operators are F, G, U, R, X
+
+    :param fsm: the BeFsm for which the property will be verified. Actually, it is only used to 
+        provide the encoder used to assign the variables to some time blocks. The api was kept 
+        this ways to keep uniformity with its non-offsetted counterpart.
+    :param formula: the property for which to generate a verification problem
+        represented in a 'node' format (subclass of :see::class:`pynusmv.node.Node`)
+        which corresponds to the format obtained from the ast. (remark: if you
+        need to manipulate [ie negate] the formula before passing it, it is
+        perfectly valid to pass a node decorated by `Wff.decorate`).
+    :param time: the logical time at which the semantics is to be evaluated. (Leave out the offset for
+        this param. If you intend the 3rd state of a trace, say time 2).
+    :param bound: the logical time bound to the problem. (Leave out the offset for this param: if you
+        intend to have a problem with at most 10 steps, say bound=10)
+    :param loop: the logical time at which a loop starts on the path. (Leave out the offset for this
+        param. If you intend to mean that loop starts at 2nd state of the trace, say loop=2)
+    :param offset: the time offset in the encoding block where the sem of this formula will be 
+        generated.
+    :return: a Be corresponding to the semantics of `formula` at `time` for a problem with a maximum
+        of `bound` steps encoded to start at time `offset` in the `fsm` encoding timeline.
+    """
+    if time < 0:
+        raise ValueError("Time must be a positive integer")
+    if bound< 0:
+        raise ValueError("Bound must be a positive integer")
+    if offset<0:
+        raise ValueError("The offset must be a positive integer")
+    if loop < 0:
+        raise ValueError("The loop must be a positive integer")
+    if loop > bound:
+        raise ValueError("The loop must start BEFORE the bound is reached")
         
+    enc = fsm.encoding
+    if bound == 0:
+        return Be.false(enc.manager)
+    elif time > bound:
+        return Be.false(enc.manager)
+    # propositional logic
+    elif formula.type == AND:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        right= bounded_semantics_with_loop_at_offset(fsm, cdr(formula), time, bound, loop, offset)
+        return left & right
+    elif formula.type == OR:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        right= bounded_semantics_with_loop_at_offset(fsm, cdr(formula), time, bound, loop, offset)
+        return left | right
+    elif formula.type == XOR:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        right= bounded_semantics_with_loop_at_offset(fsm, cdr(formula), time, bound, loop, offset)
+        return left ^ right
+    elif formula.type == NOT:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        return -left
+    elif formula.type == IMPLIES:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        right= bounded_semantics_with_loop_at_offset(fsm, cdr(formula), time, bound, loop, offset)
+        return left.imply(right)
+    elif formula.type == IFF:
+        left = bounded_semantics_with_loop_at_offset(fsm, car(formula), time, bound, loop, offset)
+        right= bounded_semantics_with_loop_at_offset(fsm, cdr(formula), time, bound, loop, offset)
+        return left.iff(right)
+    # linear temporal logic
+    elif formula.type == OP_NEXT:
+        # because of the way the loop cond is encoded
+        succ = time + 1 if time < bound-1 else loop 
+        return bounded_semantics_with_loop_at_offset(fsm, car(formula), succ, bound, loop, offset)
+    elif formula.type == OP_GLOBAL:
+        result= Be.true(enc.manager)
+        # unrolled from the start of the loop
+        for i in range(min(time, loop), bound):
+            result &= bounded_semantics_with_loop_at_offset(fsm, car(formula), i, bound, loop, offset)
+        return result
+    elif formula.type == OP_FUTURE:
+        result= Be.false(enc.manager)
+        # unrolled from the start of the loop
+        for i in range(min(time, loop), bound):
+            result |= bounded_semantics_with_loop_at_offset(fsm, car(formula), i, bound, loop, offset)
+        return result
+    elif formula.type == UNTIL:
+        # because of the way the loop cond is encoded
+        result = Be.false(enc.manager)
+        for i in reversed(range(min(time, loop), bound)):
+            psi    = bounded_semantics_with_loop_at_offset(fsm, cdr(formula), i, bound, loop, offset)
+            phi    = bounded_semantics_with_loop_at_offset(fsm, car(formula), i, bound, loop, offset)
+            result = psi | (phi & result)
+        return result
+    elif formula.type == RELEASES:
+        # In Baier & Katoen (p. 257), the unrolling of the RELEASES operator is defined as :
+        # (phi R psi) :=: psi & ( phi | X(phi R psi))
+        result = Be.true(enc.manager)
+        for i in reversed(range(min(time, loop), bound)):
+            phi   = bounded_semantics_without_loop_at_offset(fsm, car(formula), i, bound, offset)
+            psi   = bounded_semantics_without_loop_at_offset(fsm, cdr(formula), i, bound, offset)
+            result= psi & (phi | result)
+        return result
+    # basic proposition
+    else:
+        expr = Wff.decorate(formula).to_boolean_wff().to_be(enc)
+        return enc.shift_to_time(expr, offset+time)
+    
+def bounded_semantics_at_offset(fsm, formula, bound, offset):
+    """
+    Generates the Be [[formula]]_{bound} corresponding to the bounded semantic 
+    of `formula` but encodes it with an `offset` long shift in the timeline of the encoder.
+
+    .. note:: 
+
+        This function plays the same role as `bounded_semantics_all_loops` but allows to 
+        position the time blocks at some place we like in the encoder timeline. This is mostly
+        helpful if you want to devise verification methods that need to have multiple parallel
+        verifications. (ie. diagnosability).
+
+        Note however, that the two implementations are different.
+
+    .. warning::
+
+        So far, the only supported temporal operators are F, G, U, R, X
+
+    :param fsm: the BeFsm for which the property will be verified. Actually, it is only used to 
+        provide the encoder used to assign the variables to some time blocks. The api was kept 
+        this ways to keep uniformity with its non-offsetted counterpart.
+    :param formula: the property for which to generate a verification problem
+        represented in a 'node' format (subclass of :see::class:`pynusmv.node.Node`)
+        which corresponds to the format obtained from the ast. (remark: if you
+        need to manipulate [ie negate] the formula before passing it, it is
+        perfectly valid to pass a node decorated by `Wff.decorate`).
+    :param bound: the logical time bound to the problem. (Leave out the offset for this param: if you
+        intend to have a problem with at most 10 steps, say bound=10)
+    :param offset: the time offset in the encoding block where the sem of this formula will be 
+        generated.
+    :return: a Be corresponding to the semantics of `formula` for a problem with a maximum of `bound` 
+        steps encoded to start at time `offset` in the `fsm` encoding timeline.
+    """
+    if bound< 0:
+        raise ValueError("Bound must be a positive integer")
+    if offset<0:
+        raise ValueError("The offset must be a positive integer")
+    
+    enc = fsm.encoding
+    straight = bounded_semantics_without_loop_at_offset(fsm, formula, 0, bound, offset)
+    k_loop   = Be.false(enc.manager)
+    for i in range(bound): 
+        k_loop |= ( utils.loop_condition(enc, offset+bound, offset+i) 
+                  & bounded_semantics_with_loop_at_offset(fsm, formula, 0, bound, i, offset))
+    
+    # this is just the sem of the formula
+    return straight | k_loop    
 ##############################################################################
 # DUMP 
 ##############################################################################

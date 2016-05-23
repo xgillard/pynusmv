@@ -11,13 +11,13 @@ from pynusmv.glob              import load
 from pynusmv.bmc.glob          import go_bmc, bmc_exit, master_be_fsm
                                
 from pynusmv.be.expression     import Be
-from pynusmv.bmc               import utils as bmcutils
+from pynusmv.bmc               import ltlspec, utils as bmcutils
 
 from pynusmv.node              import Node 
-from pynusmv.parser            import parse_simple_expression 
-from pynusmv.sat               import SatSolverFactory, SatSolverResult, Polarity
-from pynusmv.trace             import Trace                                 
+from pynusmv.parser            import parse_simple_expression, parse_ltl_spec 
+from pynusmv.sat               import SatSolverFactory, SatSolverResult, Polarity                              
 from tools                     import diagnosability
+from pynusmv.wff import Wff
 
 class TestDiagnosability(TestCase):
     
@@ -115,12 +115,18 @@ class TestDiagnosability(TestCase):
         self.assertEqual(result_c, result_m)
         
     def test_generate_sat_problem(self):
+        theta = Node.from_ptr(parse_simple_expression("TRUE"))
+        theta = bmcutils.make_nnf_boolean_wff(theta)
+        
+        sigma_12= Node.from_ptr(parse_ltl_spec("TRUE"))
+        sigma_12= bmcutils.make_nnf_boolean_wff(sigma_12).to_node()
+        
         observable = diagnosability.mk_observable_vars(["mouse"])
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
          
         for i in range(5):
-            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -133,7 +139,7 @@ class TestDiagnosability(TestCase):
         for i in range(1, 4): 
             # length zero has no input => only an initial state and the 
             # diagnosability condition is not checked
-            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i)
+            problem = diagnosability.generate_sat_problem(observable, (f1, f2), i, theta, sigma_12)
             solver  = SatSolverFactory.create()
             cnf     = problem.to_cnf()
             solver += cnf
@@ -141,28 +147,34 @@ class TestDiagnosability(TestCase):
             self.assertEqual(SatSolverResult.SATISFIABLE, solver.solve())
 
     def test_verify_exactly(self):
+        theta = Node.from_ptr(parse_simple_expression("TRUE"))
+        theta = bmcutils.make_nnf_boolean_wff(theta)
+        
+        sigma_12= Node.from_ptr(parse_ltl_spec("TRUE"))
+        sigma_12= bmcutils.make_nnf_boolean_wff(sigma_12).to_node()
+        
         obs_names = ["mouse"]
         obs_vars  = diagnosability.mk_observable_vars(obs_names)
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = inactive"))
         
         for i in range(5):
-            res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), i)
+            res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), i, theta, sigma_12)
             self.assertEqual("No Violation", res)
         
         f1 = Node.from_ptr(parse_simple_expression("status = active"))
         f2 = Node.from_ptr(parse_simple_expression("status = highlight"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 0)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 0, theta, sigma_12)
         self.assertEqual("No Violation", res)
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 1)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 1, theta, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 2)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 2, theta, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
-        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 3)
+        res = diagnosability.verify_for_size_exactly_k(obs_names, obs_vars, (f1, f2), 3, theta, sigma_12)
         self.assertTrue(res.startswith("############### DIAGNOSABILITY VIOLATION"))
         
     def test_mk_observable_vars(self):
@@ -174,3 +186,28 @@ class TestDiagnosability(TestCase):
                 
         observable = diagnosability.mk_observable_vars(["status"])
         self.assertEqual(observable, [enc.by_name["status.1"], enc.by_name["status.0"]])
+        
+    def test_constraint_context_theta(self):
+        enc   = master_be_fsm().encoding
+        cond  = Wff(parse_simple_expression("mouse = down")).to_boolean_wff()
+        
+        theta = diagnosability.constraint_context_theta_initial(cond, 0, 1)
+        manual= enc.shift_to_time(cond.to_be(enc), 0) \
+              & enc.shift_to_time(cond.to_be(enc), 1) \
+              
+        self.assertEqual(theta, manual)
+        
+    def test_constraint_context_sigma(self):
+        fsm   = master_be_fsm()
+        cond  = Wff(parse_ltl_spec("G !(mouse = hover)"))\
+                    .to_boolean_wff()\
+                    .to_negation_normal_form()
+        off_1 = 0
+        off_2 = 2
+        length= 1
+        
+        sigma = diagnosability.constraint_context_interesting_traces(cond.to_node(), off_1, off_2, length)
+        manual= ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_1)\
+            & ltlspec.bounded_semantics_at_offset(fsm, cond.to_node(), length, off_2)
+                
+        self.assertEqual(tests.canonical_cnf(sigma), tests.canonical_cnf(manual))

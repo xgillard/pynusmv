@@ -19,20 +19,22 @@ from functools             import reduce
 
 from pynusmv.init          import init_nusmv
 from pynusmv.glob          import load, master_bool_sexp_fsm
-from pynusmv.parser        import parse_simple_expression
-from pynusmv.node          import Node, Identifier  
+from pynusmv.parser        import parse_simple_expression,     \
+                                  parse_ltl_spec
+from pynusmv.node          import Node  
+
 from pynusmv.bmc.glob      import BmcSupport, master_be_fsm
 from pynusmv.be.expression import Be
 from pynusmv.bmc.utils     import BmcModel,                    \
                                   make_nnf_boolean_wff,        \
-                                  generate_counter_example,    \
                                   booleanize
+from pynusmv.bmc.ltlspec   import bounded_semantics_at_offset 
                                   
 from pynusmv.sat           import SatSolverFactory,            \
                                   Polarity,                    \
                                   SatSolverResult 
-from pynusmv.trace         import Trace, TraceType
- 
+
+
 def arguments():
     """
     Thus function takes care of setting up the machinery to parse the command
@@ -76,6 +78,23 @@ def arguments():
                       default=10,
                       help="The problem bound (max number of steps in a trace)")
     
+    # Definition of the Diagnosability context (\theta, \Sigma_{12})
+    args.add_argument("-i", "--initial-condition", default="TRUE", 
+                      help="An initial condition which is used to constrain the"+\
+                      " possible initial belief states. This option should be " +\
+                      "used in order to force the value of some non-observable "+\
+                      "variable (with a non deterministic initial value) in the"+\
+                      " initial state in order to create a diagnosability "     +\
+                      "context. (This is the theta from the formal definition)."+\
+                      " Note: --initial-condition is left unset, the TRUE "     +\
+                      "condition is used which means that no constraint is "    +\
+                      " imposed on the initial state."                          +\
+                      "Warning: No temporal formula is allowed here")
+    
+    args.add_argument("-t", "--trace-context", default="TRUE", 
+                      help="The trace part of the diagnosability context. This "+\
+                      "option is used to force the diagnosability test to be "  +\
+                      "done in a certain context which is considered interesting")
     return args.parse_args()
 
 def mk_observable_names(args):
@@ -218,9 +237,47 @@ def constraint_eventually_critical_pair(formula_nodes, offset_path1, offset_path
         constraint |= ( enc.shift_to_time(yes, time_ + offset_path1)
                       & enc.shift_to_time(no , time_ + offset_path2) ) 
     return constraint
-        
 
-def generate_sat_problem(observable_vars, formula_nodes, length):
+# theta
+def constraint_context_theta_initial(initial_condition, offset_path1, offset_path2):
+    """
+    Generates the theta part of the context constraint. That is to say, the 
+    part of the constraint which imposes a certain initial condition on the 
+    initial belief state.
+    
+    :param initial_condition: a Node representing the intial condition to be
+        enforced on the belief state.
+    :param offset_path1: the offset at which path 1 is supposed to start (should be 0)
+    :param offset_path2: the offset at which path 2 is supposed to start (must not intersect with path1)
+    :return: the theta part of the context constraint encoded in the form of 
+        a boolean expression.
+    """
+    enc = master_be_fsm().encoding
+    # enforce cond on trace 1
+    w01 = enc.shift_to_time(initial_condition.to_be(enc), offset_path1)
+    # enforce cond on trace 2
+    w02 = enc.shift_to_time(initial_condition.to_be(enc), offset_path2)
+    return w01 & w02
+
+# sigma_12
+def constraint_context_interesting_traces(trace_spec, offset_path1, offset_path2, length):
+    """
+    Generates the sigma_12 part of the context constraint. That is to say, the 
+    shape of the traces that are considered relevant for the dagnosability test.
+    
+    :param trace_spec: a Node representing an LTL formula describing the shape
+         condition to be of the trace to be enforced for the considered traces.
+    :param offset_path1: the offset at which path 1 is supposed to start (should be 0)
+    :param offset_path2: the offset at which path 2 is supposed to start (must not intersect with path1)
+    :param length: the length of the path
+    :return: the sigma_12 part of the context constraint encoded in the form of 
+        a boolean expression.
+    """
+    fsm = master_be_fsm()
+    return ( bounded_semantics_at_offset(fsm, trace_spec, length, offset_path1) 
+           & bounded_semantics_at_offset(fsm, trace_spec, length, offset_path2) ) 
+
+def generate_sat_problem(observable_vars, formula_nodes, length, theta, sigma_12):
     """
     Generates a SAT problem which is satisfiable iff the given `formula` is 
     *NOT* diagnosable for the loaded model for traces of length `length`.
@@ -230,6 +287,10 @@ def generate_sat_problem(observable_vars, formula_nodes, length):
     :param formula: the node (NuSMV ast representation) representing the formula
         whose diagnosability is under verification
     :param length: the maximum length of the generated traces.
+    :param theta: the initial condition placed on the initial belief state 
+        (in the form of a :see:`pynusmv.node.Node`)
+    :param sigma_12: the shape of the traces considered relevant for the 
+        ongoing diagnosability test (in the form of a :see:`pynusmv.node.Node`)
     :return: a SAT problem which is satisfiable iff the given formula is not
         diagnosable on the loaded model.
     """
@@ -238,13 +299,24 @@ def generate_sat_problem(observable_vars, formula_nodes, length):
     
     problem = generate_path(offset_1, length) & generate_path(offset_2, length) \
             & constraint_same_observations(
-                                    observable_vars, offset_1, offset_2, length) \
+                                    observable_vars, offset_1, offset_2, length)\
             & constraint_eventually_critical_pair(
-                                    formula_nodes, offset_1, offset_2, length)
+                                    formula_nodes, offset_1, offset_2, length)  \
+            & constraint_context_theta_initial(theta, offset_1, offset_2)       \
+            & constraint_context_interesting_traces(sigma_12, offset_1, offset_2, length)
+             
     return problem
 
 def diagnosability_violation(observable_names, solver, k):
     """
+    Interprets the result (model of the sat solver) and prints the parallel 
+    traces (having the same observations) that lead to some critical pair.
+    
+    :param observable_names: the list of names of the variables which are 
+        considered observable in the model.
+    :param solver: the solver that responded SatResult.SATISFIABLE to some 
+        submitted problem
+    :param k: the bound on the length of the problem submitted to the solver.
     """
     lexicographically = lambda x: str(x) 
     be_enc = master_be_fsm().encoding
@@ -276,7 +348,7 @@ def diagnosability_violation(observable_names, solver, k):
     
     return counter_ex
 
-def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, k):
+def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, k, theta, sigma_12):
     """
     Performs the verification of the diagnosability problem for `formula_node`
     when a maximum of `k` execution steps are allowed.
@@ -286,10 +358,14 @@ def verify_for_size_exactly_k(observable_names, observable_vars, formula_nodes, 
     :param formula: the node (NuSMV ast representation) representing the formula
         whose diagnosability is under verification
     :param k: the maximum length of the generated traces.
+    :param theta: the initial condition placed on the initial belief state 
+        (in the form of a :see:`pynusmv.node.Node`)
+    :param sigma_12: the shape of the traces considered relevant for the 
+        ongoing diagnosability test (in the form of a :see:`pynusmv.node.Node`) 
     :return: the text 'No Violation' if no counter example could be found, 
         and a counter example when one could be identified.
     """
-    problem = generate_sat_problem(observable_vars, formula_nodes, k)
+    problem = generate_sat_problem(observable_vars, formula_nodes, k, theta, sigma_12)
     problem_= problem.inline(True)  # remove potentially redundant information
     cnf     = problem_.to_cnf()
     
@@ -316,8 +392,15 @@ def check(args, condition_text, observable):
     try:
         observable_vars          = mk_observable_vars(observable)
         diagnosability_condition = mk_specs_nodes(condition_text)
+        
+        theta = Node.from_ptr(parse_simple_expression(args.initial_condition))
+        theta = make_nnf_boolean_wff(theta)
+        
+        sigma_12= Node.from_ptr(parse_ltl_spec(args.trace_context))
+        sigma_12= make_nnf_boolean_wff(sigma_12).to_node()
+        
         for k in range(args.bound+1):
-            result = verify_for_size_exactly_k(observable, observable_vars, diagnosability_condition, k) 
+            result = verify_for_size_exactly_k(observable, observable_vars, diagnosability_condition, k, theta, sigma_12) 
             if "No Violation" != str(result):
                 print("-- {} is *NOT* diagnosable for length {}".format(diagnosability_condition, k))
                 print(result)

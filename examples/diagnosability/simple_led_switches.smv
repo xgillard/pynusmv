@@ -10,8 +10,8 @@ VAR
   led1 : LED(cbr1.status = on & ! cbr1.brk_right);
 
   cbr2 : CBR(cbr0.status = on & ! cbr0.brk_right);
-  led3 : LED(cbr2.status = on & ! cbr2.brk_left);
-  led4 : LED(cbr2.status = on & ! cbr2.brk_right);
+  led2 : LED(cbr2.status = on & ! cbr2.brk_left);
+  led3 : LED(cbr2.status = on & ! cbr2.brk_right);
 
 ASSIGN
   init(power) := TRUE;
