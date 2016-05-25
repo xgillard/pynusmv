@@ -91,13 +91,36 @@ def loop_condition(enc, k, l):
         cond = cond & ( vl.iff(vk) )
     return cond
 
+def fairness_constraint(fsm, k, l):
+    """
+    Computes a step of the constraint to be added to the loop side of the BE 
+    when one wants to take fairness into account for the case where we consider 
+    the existence of a k-l loop (between k and l obviously).
+    
+    :param fsm: the fsm whose transition relation must be unrolled
+    :param k: the maximum (horizon/bound) time of the problem
+    :param l: the time where the loop starts 
+    :return: a step of the fairness constraint to force fair execution on the
+        k-l loop.
+    """
+    constraint = Be.true(fsm.encoding.manager)
+    # nothing to generate, stop
+    if k == 0:
+        return constraint
+    
+    for fairness in fsm.fairness_iterator():
+        # just a shortcut for the loop to create 
+        #    \bigvee_{l}^{k-1} (fairness_{l})
+        constraint &= fsm.encoding.or_interval(fairness, l, k-1)
+    return constraint
+
 ###############################################################################
 # Abstract ast nodes
 ###############################################################################
 class Formula:
     """An abstract base class meant to be the parent of all the AST nodes"""
     
-    def bounded_semantics(self, enc, k):
+    def bounded_semantics(self, fsm, k, fairness=True):
         """
         Returns a boolean expression corresponding to the bounded semantics of
         the formula denoted by `self` on a path of length k. This combines both
@@ -107,18 +130,27 @@ class Formula:
             This function takes the same approach as NuSMV and does not enforce
             the absence of loop when using the more restrictive semantic_no_loop.
             
-        :param enc: the encoding used to store and organize the variables (used 
-            ie to shift vars)
+        :param fsm: the FSM representing the model. It is used to gain access
+            to the encoder (-> shift variables) and to obtain the list of
+            fairness constraints.
         :param k: the last time that exists in the universe of this expression
+        :param fairness: a flag indicating whether or not the fairness constraints
+            should be taken into account while generating the formula.
         :return: a boolean expression translating the bounded semantics of this
             formula.
         """
+        enc    = fsm.encoding 
         noloop = self.semantic_no_loop(enc, 0, k)
         
         w_loop = Be.false(enc.manager)
         for l in range(k):   # [0; k-1]
-            w_loop |= (loop_condition(enc, k, l) & 
-                       self.semantic_with_loop(enc, 0, k, l))
+            fairness_cond = fairness_constraint(fsm, k, l) \
+                                 if fairness \
+                                 else Be.true(enc.manager)
+                                 
+            w_loop |= (loop_condition(enc, k, l) \
+                      & fairness_cond \
+                      & self.semantic_with_loop(enc, 0, k, l))
             
         return noloop | w_loop
     

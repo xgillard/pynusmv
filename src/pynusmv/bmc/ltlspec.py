@@ -702,7 +702,7 @@ def bounded_semantics_with_loop_at_offset(fsm, formula, time, bound, loop, offse
         expr = Wff.decorate(formula).to_boolean_wff().to_be(enc)
         return enc.shift_to_time(expr, offset+time)
     
-def bounded_semantics_at_offset(fsm, formula, bound, offset):
+def bounded_semantics_at_offset(fsm, formula, bound, offset, fairness=True):
     """
     Generates the Be [[formula]]_{bound} corresponding to the bounded semantic 
     of `formula` but encodes it with an `offset` long shift in the timeline of the encoder.
@@ -732,6 +732,8 @@ def bounded_semantics_at_offset(fsm, formula, bound, offset):
         intend to have a problem with at most 10 steps, say bound=10)
     :param offset: the time offset in the encoding block where the sem of this formula will be 
         generated.
+    :param fairness: a flag indicating whether or not to take the fairness 
+        constraint into account.
     :return: a Be corresponding to the semantics of `formula` for a problem with a maximum of `bound` 
         steps encoded to start at time `offset` in the `fsm` encoding timeline.
     """
@@ -744,7 +746,11 @@ def bounded_semantics_at_offset(fsm, formula, bound, offset):
     straight = bounded_semantics_without_loop_at_offset(fsm, formula, 0, bound, offset)
     k_loop   = Be.false(enc.manager)
     for i in range(bound): 
-        k_loop |= ( utils.loop_condition(enc, offset+bound, offset+i) 
+        fairness_cond = utils.fairness_constraint(fsm, offset+bound, offset+i) \
+                                 if fairness \
+                                 else Be.true(enc.manager)
+        k_loop |= ( utils.loop_condition(enc, offset+bound, offset+i) \
+                  & fairness_cond \
                   & bounded_semantics_with_loop_at_offset(fsm, formula, 0, bound, i, offset))
     
     # this is just the sem of the formula

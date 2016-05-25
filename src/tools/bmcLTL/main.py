@@ -19,6 +19,7 @@ def arguments():
     :returns: an object having field to store each of the command line arguments
     """
     parser = argparse.ArgumentParser(description="a PyNuSMV backed LTL sat based bmc verifier for LTL")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Displays the text of the analyzed model")
     parser.add_argument("-k", "--bound",   type=int, default=10, help="the maximum number of steps in a verified path")
     parser.add_argument("-s", "--spec",    type=str, help="the LTL specification to verify")
     parser.add_argument("-f", "--no-fairness",  help="disable the use of fairness constraints", action="store_true")
@@ -45,9 +46,9 @@ if __name__ == "__main__":
     args = arguments()
     with init_nusmv():
         load(args.model)
-         
-        with open(args.model) as f:
-            print(f.read())
+        if args.verbose:
+            with open(args.model) as f:
+                print(f.read())
         
         with BmcSupport():
             if args.spec is not None: 

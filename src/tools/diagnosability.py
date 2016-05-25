@@ -267,13 +267,13 @@ def constraint_eventually_critical_pair(formula_nodes, offset_path1, offset_path
     :return: an expression describing the 'critical pair' condition.
     """
     enc = master_be_fsm().encoding
-    yes = make_nnf_boolean_wff(formula_nodes[0]).to_be(enc)
-    no  = make_nnf_boolean_wff(formula_nodes[1]).to_be(enc)
+    c1  = make_nnf_boolean_wff(formula_nodes[0]).to_be(enc)
+    c2  = make_nnf_boolean_wff(formula_nodes[1]).to_be(enc)
     
     constraint = Be.false(enc.manager)
     for time_ in range(length+1):
-        constraint |= ( enc.shift_to_time(yes, time_ + offset_path1)
-                      & enc.shift_to_time(no , time_ + offset_path2) ) 
+        constraint |= ( enc.shift_to_time(c1, time_ + offset_path1)
+                      & enc.shift_to_time(c2 , time_ + offset_path2) ) 
     return constraint
 
 # theta

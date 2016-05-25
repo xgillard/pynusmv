@@ -27,7 +27,7 @@ from tests.pynusmv.testBmcInvarSpec                import TestBmcInvarSpec
 from tests.pynusmv.testBmcLTLspec                  import TestBmcLTLSpec
 from tests.pynusmv.testBmcLTLspecAtOffset          import TestBmcLTLSpecAtOffset
 from tests.pynusmv.testBmcModel                    import TestBmcModel
-from tests.pynusmv.testBmcUtils                    import TestBmcUtils
+from tests.pynusmv.testBmcUtils                    import TestBmcUtils,TestBmcUtils2
 from tests.pynusmv.testBoolSexpFsm                 import TestBoolSexpFsm
 from tests.pynusmv.testBuildBooleanModel           import TestBuildBooleanModel
 from tests.pynusmv.testIndexed                     import TestIndexed
@@ -66,6 +66,7 @@ def suite():
     suite.addTest(unittest.makeSuite(TestBmcLTLSpecAtOffset))
     suite.addTest(unittest.makeSuite(TestBmcModel))
     suite.addTest(unittest.makeSuite(TestBmcUtils))
+    suite.addTest(unittest.makeSuite(TestBmcUtils2))
     suite.addTest(unittest.makeSuite(TestBoolSexpFsm))
     suite.addTest(unittest.makeSuite(TestBuildBooleanModel))
     suite.addTest(unittest.makeSuite(TestIndexed))

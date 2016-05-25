@@ -1,0 +1,3 @@
+time ./nusmv/NuSMV  -bmc -sat_solver MiniSat ../bmc_testbench/philo/philo_7.smv
+
+time ./tools/bmcLTL/main.py -s "[](p1.waiting => <> ! p1.waiting)" ../bmc_testbench/philo/philo_7.smv

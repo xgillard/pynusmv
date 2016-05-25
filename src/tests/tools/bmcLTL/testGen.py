@@ -69,58 +69,6 @@ class TestGen(TestCase):
             self.assertEqual(s_tool, s_manual)
             self.assertEqual(s_tool, s_nusmv)
     
-    def verify_step_fairness_constraint(self):
-        # must be true
-        tool = gen.step_fairness_constraint(self.befsm, 0, 0)
-        self.assertEqual(tool, Be.true(self.mgr))
-         
-        # loop position does not matter if not feasible
-        tool = gen.step_fairness_constraint(self.befsm, 0, 1)
-        self.assertEqual(tool, Be.true(self.mgr))
-        
-        model= bmcutils.BmcModel()
-        # step 0
-        tool = gen.step_fairness_constraint(self.befsm, 1, 0)
-        smv  = model.fairness(1, 0) 
-        self.assertEqual(tool, smv)
-         
-        # step 1
-        tool = gen.step_fairness_constraint(self.befsm, 2, 1)
-        smv  = model.fairness(2, 1) 
-        self.assertEqual(tool, smv)
-        
-    def test_step_fairness_constraint(self):
-        with tests.Configure(self, __file__, "/example.smv"):
-            self.verify_step_fairness_constraint()
-        
-        with tests.Configure(self, __file__, "/philo.smv"):
-            self.verify_step_fairness_constraint()
-           
-    def verify_fairness_constraint(self, bound):
-        model  = bmcutils.BmcModel() 
-            
-        manual = Be.true(self.mgr) 
-        for i in range(bound):
-            manual &= model.fairness(bound, i)
-        
-        tool = gen.fairness_constraint(self.befsm, bound)
-        
-        self.assertEqual(tests.canonical_cnf(tool), 
-                         tests.canonical_cnf(manual))
-            
-    def test_fairness_constraint(self):
-        with tests.Configure(self, __file__, "/example.smv"):
-            self.verify_fairness_constraint(0)
-            self.verify_fairness_constraint(1)
-            self.verify_fairness_constraint(2)
-            self.verify_fairness_constraint(3)
-            
-        with tests.Configure(self, __file__, "/philo.smv"):
-            self.verify_fairness_constraint(0)
-            self.verify_fairness_constraint(1)
-            self.verify_fairness_constraint(2)
-            self.verify_fairness_constraint(3)
-    
     def verify_invariants_constraint(self, bound):
         model  = bmcutils.BmcModel() 
             
@@ -169,7 +117,7 @@ class TestGen(TestCase):
         smv     = ltlspec.generate_ltl_problem(fsm, fml_node, bound)
         tool    = gen.generate_problem(formula, fsm, bound)
         manual  = gen.model_problem(fsm, bound) &\
-                  formula.nnf(True).bounded_semantics(fsm.encoding, bound)
+                  formula.nnf(True).bounded_semantics(fsm, bound)
          
         sat_smv = self.satisfiability(smv)
         sat_tool= self.satisfiability(tool)

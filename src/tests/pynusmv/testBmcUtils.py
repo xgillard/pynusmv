@@ -554,4 +554,34 @@ class TestBmcUtils(unittest.TestCase):
             # works as expected for existing vars
             self.assertEqual("[i.1, i.0]", str(bmcutils.booleanize("i")))
             self.assertEqual("[b]", str(bmcutils.booleanize("b")))
-            
+    
+class TestBmcUtils2(unittest.TestCase):
+    """Continues the same validation but allows the used of the test.Configure
+    functionality"""
+    
+    def verify_fairness_constraint(self):
+        # must be true
+        tool = bmcutils.fairness_constraint(self.befsm, 0, 0)
+        self.assertEqual(tool, Be.true(self.mgr))
+          
+        # loop position does not matter if not feasible
+        with self.assertRaises(ValueError):
+            bmcutils.fairness_constraint(self.befsm, 0, 1)
+         
+        model= bmcutils.BmcModel()
+        # step 0
+        tool = bmcutils.fairness_constraint(self.befsm, 1, 0)
+        smv  = model.fairness(1, 0) 
+        self.assertEqual(tool, smv)
+          
+        # step 1
+        tool = bmcutils.fairness_constraint(self.befsm, 2, 1)
+        smv  = model.fairness(2, 1) 
+        self.assertEqual(tool, smv)
+         
+    def test_fairness_constraint(self):
+        with tests.Configure(self, __file__, "/models/example.smv"):
+            self.verify_fairness_constraint()
+         
+        with tests.Configure(self, __file__, "/models/philo.smv"):
+            self.verify_fairness_constraint()

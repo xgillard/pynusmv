@@ -1,0 +1,22 @@
+#! /usr/local/bin/python3
+
+def measure(command):
+    import time
+    import os 
+    import resource
+    
+    start   = time.time()
+    os.system(command)
+    end     = time.time()
+    duration= end - start
+    rusage  = resource.getrusage(resource.RUSAGE_CHILDREN)
+    
+    return {'command' : command, 
+            'duration': duration, 
+            'memory'  : rusage.ru_maxrss / 1024
+           } 
+
+if __name__ == "__main__":
+    import sys
+    
+    print(measure(" ".join(sys.argv[1:])), file=sys.stderr)

@@ -195,6 +195,37 @@ def loop_condition(enc, k, l):
         cond = cond & ( vl.iff(vk) )
     return cond
 
+def fairness_constraint(fsm, k, l):
+    """
+    Computes a step of the constraint to be added to the loop side of the BE 
+    when one wants to take fairness into account for the case where we consider 
+    the existence of a k-l loop (between k and l obviously).
+    
+    :param fsm: the fsm whose transition relation must be unrolled
+    :param k: the maximum (horizon/bound) time of the problem
+    :param l: the time where the loop starts 
+    :return: a step of the fairness constraint to force fair execution on the
+        k-l loop.
+    :raises ValueError: when the given `k` and `l` are not consistent with each 
+        other or when the bound `k` is negative.
+    """
+    check_consistency(k, l)
+    
+    if is_no_loopback(l):
+        return Be.false(fsm.encoding.manager)
+    
+    constraint = Be.true(fsm.encoding.manager)
+    # nothing to generate, stop
+    if k == 0:
+        return constraint
+    
+    for fairness in fsm.fairness_iterator():
+        # just a shortcut for the loop to create 
+        #    \bigvee_{l}^{k-1} (fairness_{l})
+        constraint &= fsm.encoding.or_interval(fairness, l, k-1)
+    return constraint
+
+
 def successor(time, k, l):
     """
     Returns the successor time of `time` in the context of a (loopy) trace 

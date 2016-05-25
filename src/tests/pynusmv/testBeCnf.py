@@ -175,15 +175,19 @@ class TestBeCnf(unittest.TestCase):
         cnf= (w.imply(v)).to_cnf(Polarity.NEGATIVE)
         # ! ( w => v ) <=> ! ( !w | v)
         #              <=> w & !v
-        self.assertEqual("formula literal = X6 <-> (X3) & (!X1)", str(cnf))
+        self.assertTrue(str(cnf) in ["formula literal = X6 <-> (X3) & (!X1)", 
+                                     "formula literal = X6 <-> (!X1) & (X3)"])
         
         cnf= (w.imply(v)).to_cnf(Polarity.NOT_SET)
-        self.assertEqual("formula literal = X7 <-> (X3) & (!X1) & (X1 | !X3)", str(cnf))
+        self.assertTrue(str(cnf) in ["formula literal = X7 <-> (X3) & (!X1) & (X1 | !X3)", 
+                                     "formula literal = X7 <-> (!X1) & (X3) & (!X3 | X1)"])
         
         # by default the polarity is positive 
         cnf= (w.imply(v)).to_cnf()
-        self.assertEqual("formula literal = X8 <-> (X1 | !X3)", str(cnf))
+        self.assertTrue(str(cnf) in ["formula literal = X8 <-> (X1 | !X3)", 
+                                     "formula literal = X8 <-> (!X3 | X1)"])
         
         # negative polarity corresponds to a negation of the formula
         cnf= (-w.imply(v)).to_cnf()
-        self.assertEqual("formula literal = X9 <-> (X3) & (!X1)", str(cnf))
+        self.assertTrue(str(cnf) in ["formula literal = X9 <-> (X3) & (!X1)", 
+                                     "formula literal = X9 <-> (!X1) & (X3)"])
