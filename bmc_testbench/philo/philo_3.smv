@@ -22,6 +22,9 @@ ASSIGN
 LTLSPEC -- no deadlock expressed in LTL
   G (p1.waiting -> F !p1.waiting);
 
+CTLSPEC
+  AG (p1.waiting -> AF !p1.waiting);
+
 MODULE philosopher(id, left, right)
 -- This module models the behavior of one of the philosopher participating to
 -- the dinner.
@@ -58,5 +61,5 @@ ASSIGN
 FAIRNESS 
   -- This fairness constraint forces NuSMV to consider traces where the 
   -- philosophers processes actually do run.
-  --!waiting;
-  running;
+  !waiting;
+  --running;

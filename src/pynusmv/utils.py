@@ -653,3 +653,31 @@ class indexed:
         
         return class_deco
     
+def memoize(cache, key=lambda *x: x):
+    """
+    A decorator that performs memoization for the decorated function. However,
+    it was customized not to enforce a match on ALL the arguments. Instead,
+    a key function may be specified to tell what really should be used to 
+    uniquely identify a result that has already been computed.
+    
+    .. note:: Thanks to the use of @functools, this decorator works for both
+        functions and methods.
+    
+    :param cache: the dictionary that will serve as cache to store the previously
+        computed results.
+    :param key: a function to customize the key of the entry in the cache map.
+    :return: whatever the decorated function would normally return.
+    """
+    import functools
+    
+    def wrap(fun):
+        return fun
+        @functools.wraps(fun)
+        def memoizer(*args, **kwargs):
+            k = key(*args)
+            if k not in cache:
+                cache[k] = fun(*args, **kwargs)
+            return cache[k]
+        return memoizer
+    
+    return wrap

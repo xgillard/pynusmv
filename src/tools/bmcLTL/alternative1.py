@@ -1,16 +1,18 @@
 #! /usr/local/bin/python3
 """
-This module is the entry point of a simple sat based bounded model checker for
-the Linear Temporal Logic (LTL) implemented using the PyNuSMV library.
+This is an alternative implementation which uses the native C api as they were
+brought by the the ltlspec module.
 """
 import sys
 import argparse
 
 from pynusmv.init         import init_nusmv
 from pynusmv.glob         import load
-from pynusmv.bmc.glob     import BmcSupport
-from tools.bmcLTL.parsing import parseLTL
-from tools.bmcLTL.check   import check_ltl 
+from pynusmv.bmc.glob     import BmcSupport, master_be_fsm
+from pynusmv.parser       import parse_ltl_spec
+from pynusmv.node         import Node 
+from pynusmv.sat          import SatSolverFactory, Polarity, SatSolverResult
+from pynusmv.bmc          import ltlspec, utils as bmcutils
 
 def arguments():
     """
@@ -29,22 +31,50 @@ def arguments():
     
     return parser.parse_args()
 
+def check_problem(pb, length):
+    fsm    = master_be_fsm()
+    cnf    = pb.to_cnf(Polarity.POSITIVE)
+    
+    solver = SatSolverFactory.create()
+    solver+= cnf
+    solver.polarity(cnf, Polarity.POSITIVE)
+    
+    if solver.solve() == SatSolverResult.SATISFIABLE:
+        cnt_ex = bmcutils.generate_counter_example(fsm, pb, solver, length, "Violation")
+        return ("Violation", cnt_ex)
+    else:
+        return ("Ok", None)
+
+def check_ltl(fml, bound, dry_run):
+    import time
+    fsm     = master_be_fsm()
+    
+    for i in range(bound+1):
+        start = time.time()
+        problem = ltlspec.generate_ltl_problem(fsm, fml, i)
+        end   = time.time()
+        if not dry_run: 
+            status, trace = check_problem(problem, i) 
+            if status != "Ok":
+                return (status, i, trace)
+            else:
+                print("-- No problem at length {}".format(i))
+        else:
+            print(" 'Problem {}' ; {}".format(i, end-start))
+            
+    return ("Ok", bound, None)
+
 def check(formula, args):
-    try:
-        parsed_fml          = parseLTL(formula.strip())
-        status,length,trace = check_ltl(parsed_fml, args.bound, args.no_fairness, args.no_invariants, args.dry_run)
-        if status != 'Ok':
-            print("-- {} for length {}".format(status, length))
-            print(trace)
-    except Exception as e:
-        print("The specification contains a syntax error")
-        print(e)
+    parsed_fml          = Node.from_ptr(parse_ltl_spec(formula.strip()))
+    status,length,trace = check_ltl(parsed_fml, args.bound, args.dry_run)
+    if status != 'Ok':
+        print("-- {} for length {}".format(status, length))
+        print(trace)
+
 
 if __name__ == "__main__":
-    """
-    The main program.
-    """
     args = arguments()
+    
     with init_nusmv():
         load(args.model)
         if args.verbose:
@@ -58,5 +88,3 @@ if __name__ == "__main__":
                 print("Enter LTL properties, one per line:")
                 for line in sys.stdin:
                     check(line, args)
-        
-        

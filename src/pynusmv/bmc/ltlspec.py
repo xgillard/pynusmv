@@ -8,13 +8,15 @@ of problem to file (in DIMACS format)
 from pynusmv.nusmv.bmc           import bmc as _bmc
 from pynusmv.nusmv.node          import node as _node
 
+from pynusmv.utils               import memoize 
 from pynusmv.nusmv.parser.parser import (AND, OR, XOR, NOT, IMPLIES, IFF, \
                                          OP_NEXT, OP_GLOBAL, OP_FUTURE, UNTIL, RELEASES)
 from pynusmv.node                import Node  
 from pynusmv.wff                 import Wff 
 from pynusmv.be.expression       import Be 
 from pynusmv.exception           import NuSmvSatSolverError 
-from pynusmv.bmc                 import utils 
+from pynusmv.bmc.glob            import gen_cache
+from pynusmv.bmc                 import utils
 
 __all__ = ['check_ltl',
            'check_ltl_incrementally',
@@ -489,6 +491,7 @@ def cdr(this_node):
     """
     return Node.from_ptr(_node.cdr(this_node._ptr))
 
+@memoize(gen_cache(), key=lambda x:x([1], x[2], x[3], x[4]))
 def bounded_semantics_without_loop_at_offset(fsm, formula, time, bound, offset):
     """
     Generates the Be [[formula]]^{time}_{bound} corresponding to the bounded semantic 
@@ -584,7 +587,8 @@ def bounded_semantics_without_loop_at_offset(fsm, formula, time, bound, offset):
     else:
         expr = Wff.decorate(formula).to_boolean_wff().to_be(enc)
         return enc.shift_to_time(expr, offset+time)
-    
+
+@memoize(gen_cache(), key=lambda x:x([1], x[2], x[3], x[4], x[5]))
 def bounded_semantics_with_loop_at_offset(fsm, formula, time, bound, loop, offset):
     """
     Generates the Be _{loop}[[formula]]^{time}_{bound} corresponding to the bounded semantic 

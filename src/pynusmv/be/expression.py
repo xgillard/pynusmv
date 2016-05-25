@@ -20,7 +20,7 @@ import pynusmv.nusmv.be.be as _be
 # ==============================================================================
 # ===== Useful classes =========================================================
 # ==============================================================================
-class Be(PointerWrapper):
+class Be:
     """
     This is the interface of the boolean expression type.
     For obvious reasons, the function names have been kept as close to its
@@ -47,7 +47,7 @@ class Be(PointerWrapper):
         concern.
     """
 
-    def __init__(self, ptr, be_manager, freeit=False):
+    def __init__(self, ptr, be_manager):
         """
         Creates a new boolean expression (BE) from the given ``ptr``
 
@@ -62,20 +62,8 @@ class Be(PointerWrapper):
         """
         assert (ptr is not None)
         assert (be_manager is not None)
-        super().__init__(ptr, freeit)
+        self._ptr = ptr
         self._manager = be_manager
-
-    def _free(self):
-        """
-        Frees any system resources related to the manager.
-
-        Warning:
-            This method is NOT implemented in this base class and should be
-            overridden by any implementing subclass
-        """
-        if self._freeit and self._ptr is not None:
-            # TODO: I don't know what must be done (if anything) in order to free the be_ptr
-            pass
 
     def __hash__(self):
         """
@@ -362,11 +350,16 @@ class Be(PointerWrapper):
         return BeCnf(_be.Be_ConvertToCnf(self._manager._ptr, self._ptr, polarity), self._manager)
 
    
-class BeCnf(PointerWrapper):
+class BeCnf:
     """
     This class implements the CNF representation of a boolean expression
     """
-
+    
+    # This is really weird, declaring this var as a subclass of PointerWrapper
+    # will only bring SEGFAULTs (because of double free's) although, it should
+    # be perfectly allowed to manually delete some cnf. For this reason, it has
+    # been undone and this class no longer inherits from PointerWrapper.
+     
     def __init__(self, ptr, be_manager, freeit=False):
         """
         Creates a CNF from the given ``ptr``
@@ -379,17 +372,18 @@ class BeCnf(PointerWrapper):
         :return: a new CNF object wrapping the given pointer
         """
         assert(ptr is not None)
-        super().__init__(ptr, freeit=freeit)
+        #super().__init__(ptr, freeit=freeit)
+        self._ptr = ptr
         self._manager = be_manager  # serves only the purpose of being able to wrap/unwrap BE
 
-    def _free(self):
-        """
-        Frees any system resources related to the CNF.
-        """
-        if self._freeit and self._ptr is not None:
-            _be.Be_Cnf_Delete(self._ptr)
-            self._ptr = None
-            self._freeit = False
+    #def _free(self):
+    #    """
+    #    Frees any system resources related to the CNF.
+    #    """
+    #    if self._freeit and self._ptr is not None:
+    #        _be.Be_Cnf_Delete(self._ptr)
+    #        self._ptr = None
+    #        self._freeit = False
     
     # ==============================================================================
     # ===== CNF properties =========================================================

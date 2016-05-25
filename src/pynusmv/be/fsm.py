@@ -118,7 +118,9 @@ class BeFsm(PointerWrapper):
     @property
     def encoding(self):
         """The BE encoding of this FSM"""
-        return BeEnc(_be.BeFsm_get_be_encoding(self._ptr), freeit=False)
+        if not hasattr(self, "__encoding"):
+            setattr(self, '__encoding', BeEnc(_be.BeFsm_get_be_encoding(self._ptr), freeit=False))
+        return getattr(self, '__encoding')
     
     @property
     def init(self):

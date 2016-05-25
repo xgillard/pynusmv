@@ -17,8 +17,8 @@ compose an LTL abstract syntax tree.
     
                 Biere et al - ``Bounded Model Checking'' - 2003  
 """
-
-from pynusmv.bmc.glob      import master_be_fsm
+from pynusmv.utils         import memoize
+from pynusmv.bmc.glob      import master_be_fsm, gen_cache
 from pynusmv.be.expression import Be
 from pynusmv.wff           import Wff 
 from pynusmv.parser import parse_simple_expression
@@ -55,6 +55,7 @@ def successor(i, k, l):
     """
     return i+1 if i < k-1 else l
 
+@memoize(gen_cache(), key=lambda *x: ("LC", x[1], x[2]))
 def loop_condition(enc, k, l):
     """
     This function generates a Be expression representing the loop condition
@@ -91,6 +92,7 @@ def loop_condition(enc, k, l):
         cond = cond & ( vl.iff(vk) )
     return cond
 
+@memoize(gen_cache(), key=lambda *x: ("FC", x[1], x[2]))
 def fairness_constraint(fsm, k, l):
     """
     Computes a step of the constraint to be added to the loop side of the BE 
@@ -278,9 +280,11 @@ class Proposition(Atomic):
         
         :return: a be expression (Be) corresponding to `self`
         """
-        befsm = master_be_fsm()
-        node  = parse_simple_expression(self.id)
-        return Wff(node).to_boolean_wff().to_be(befsm.encoding)
+        if not hasattr(self, "__booleanized"):
+            befsm = master_be_fsm()
+            node  = parse_simple_expression(self.id)
+            setattr(self, "__booleanized", Wff(node).to_boolean_wff().to_be(befsm.encoding))
+        return getattr(self, "__booleanized")
     
     def _at_time(self, time):
         """
@@ -302,6 +306,7 @@ class Proposition(Atomic):
         booleanized = self._booleanize()
         return master_be_fsm().encoding.shift_to_time(booleanized, time) 
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         return self._at_time(i)
     
@@ -312,9 +317,11 @@ class Proposition(Atomic):
         return self if not negated else Not(self)
 
 class Not(Unary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         return - self.prop.semantic_no_loop(enc, i, k)
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         return -self.prop.semantic_with_loop(enc, i, k, l)
     
@@ -323,11 +330,13 @@ class Not(Unary):
         return self.prop.nnf(True) if not negated else self.prop.nnf(False) 
 
 class And(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         lhs = self.lhs.semantic_no_loop(enc, i, k)
         rhs = self.rhs.semantic_no_loop(enc, i, k)
         return lhs & rhs
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
@@ -341,11 +350,13 @@ class And(Binary):
             
 
 class Or(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         lhs = self.lhs.semantic_no_loop(enc, i, k)
         rhs = self.rhs.semantic_no_loop(enc, i, k)
         return lhs | rhs
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
@@ -358,11 +369,13 @@ class Or(Binary):
             return And(self.lhs.nnf(True), self.rhs.nnf(True))
         
 class Xor(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         lhs = self.lhs.semantic_no_loop(enc, i, k)
         rhs = self.rhs.semantic_no_loop(enc, i, k)
         return lhs ^ rhs
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
@@ -377,11 +390,13 @@ class Xor(Binary):
             return rewrite.nnf(negated)
         
 class Imply(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         lhs = self.lhs.semantic_no_loop(enc, i, k)
         rhs = self.rhs.semantic_no_loop(enc, i, k)
         return lhs.imply(rhs)
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
@@ -391,11 +406,13 @@ class Imply(Binary):
         return Or(Not(self.lhs), self.rhs).nnf(negated)
 
 class Equiv(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         lhs = self.lhs.semantic_no_loop(enc, i, k)
         rhs = self.rhs.semantic_no_loop(enc, i, k)
         return lhs.iff(rhs)
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         lhs = self.lhs.semantic_with_loop(enc, i, k, l)
         rhs = self.rhs.semantic_with_loop(enc, i, k, l)
@@ -409,6 +426,7 @@ class Equiv(Binary):
 ###############################################################################
 
 class Until(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         """The semantics when there is no loop:: [[lhs U rhs]]_{bound}^{time}"""
         # k is not infinity when there is no loop
@@ -419,23 +437,23 @@ class Until(Binary):
         phi = self.lhs.semantic_no_loop(enc, i, k)  
         return psi | (phi & self.semantic_no_loop(enc, i+1, k))
 
+    def _semantic(self, enc, time, k, l, cnt):
+        """auxiliary function to stop recursing after k steps"""
+        # at infinity, it is false: psi MUST happen at some time
+        if cnt == k:
+            return Be.false(enc.manager)
+        psi = self.rhs.semantic_with_loop(enc, time, k, l)  
+        phi = self.lhs.semantic_with_loop(enc, time, k, l)  
+        return psi | (phi & self._semantic(enc, successor(time, k, l), k, l, cnt+1))
     
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         """The semantics when there is a loop:: _{l}[[lhs U rhs]]_{bound}^{time}"""
         # without moving at least one step, it is impossible to go through a loop
         if k == 0: 
             return Be.false(enc.manager)
         
-        def _semantic(time, cnt):
-            """auxiliary function to stop recursing after k steps"""
-            # at infinity, it is false: psi MUST happen at some time
-            if cnt == k:
-                return Be.false(enc.manager)
-            psi = self.rhs.semantic_with_loop(enc, time, k, l)  
-            phi = self.lhs.semantic_with_loop(enc, time, k, l)  
-            return psi | (phi & _semantic(successor(time, k, l), cnt+1))
-        
-        return _semantic(i, 0)
+        return self._semantic(enc, i, k, l, 0)
     
     def nnf(self, negated):
         if not negated:
@@ -447,6 +465,7 @@ class Until(Binary):
             return WeakUntil(psi, And(phi, psi))
 
 class WeakUntil(Binary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         """The semantics when there is no loop:: [[lhs W rhs]]_{bound}^{time}"""
         # k is not infinity when there is no loop
@@ -457,22 +476,23 @@ class WeakUntil(Binary):
         phi = self.lhs.semantic_no_loop(enc, i, k)  
         return psi | (phi & self.semantic_no_loop(enc, i+1, k))
     
+    def _semantic(self, enc, time, k, l, cnt):
+        """auxiliary function to stop recursing after k steps"""
+        # at infinity, it is true: psi is not forced if []phi
+        if cnt == k:
+            return Be.true(enc.manager)
+        psi = self.rhs.semantic_with_loop(enc, time, k, l)  
+        phi = self.lhs.semantic_with_loop(enc, time, k, l)  
+        return psi | (phi & self._semantic(enc, successor(time, k, l), k, l, cnt+1))
+    
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         """The semantics when there is a loop:: _{l}[[lhs W rhs]]_{bound}^{time}"""
         # without moving at least one step, it is impossible to go through a loop
         if k == 0: 
             return Be.false(enc.manager)
         
-        def _semantic(time, cnt):
-            """auxiliary function to stop recursing after k steps"""
-            # at infinity, it is true: psi is not forced if []phi
-            if cnt == k:
-                return Be.true(enc.manager)
-            psi = self.rhs.semantic_with_loop(enc, time, k, l)  
-            phi = self.lhs.semantic_with_loop(enc, time, k, l)  
-            return psi | (phi & _semantic(successor(time, k, l), cnt+1))
-        
-        return _semantic(i, 0)
+        return self._semantic(enc, i, k, l, 0)
     
     def nnf(self, negated):
         if not negated:
@@ -487,18 +507,19 @@ class Globally(Unary):
     def semantic_no_loop(self, enc, i, k):
         return Be.false(enc.manager)
     
+    def _semantic(self, enc, time, k, l, cnt):
+        if cnt == k:
+            return Be.true(enc.manager)
+        now = self.prop.semantic_with_loop(enc, time, k, l)
+        return now & self._semantic(enc, successor(time, k, l), k, l, cnt+1)
+    
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         # without moving at least one step, it is impossible to go through a loop
         if k == 0: 
             return Be.false(enc.manager)
         
-        def _semantic(time, cnt):
-            if cnt == k:
-                return Be.true(enc.manager)
-            now = self.prop.semantic_with_loop(enc, time, k, l)
-            return now & _semantic(successor(time, k, l), cnt+1)
-        
-        return _semantic(i, 0)
+        return self._semantic(enc, i, k, l, 0)
     
     def nnf(self, negated):
         if not negated:
@@ -507,6 +528,7 @@ class Globally(Unary):
             return Eventually(self.prop.nnf(True))
 
 class Eventually(Unary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         if i > k:
             return Be.false(enc.manager)
@@ -514,17 +536,18 @@ class Eventually(Unary):
         now = self.prop.semantic_no_loop(enc, i, k)
         return now | self.semantic_no_loop(enc, i+1, k)
 
+    def _semantic(self, enc, time, k, l, cnt):
+        if cnt == k:
+            return Be.false(enc.manager)
+        now = self.prop.semantic_with_loop(enc, time, k, l)
+        return now | self._semantic(enc, successor(time, k, l), k,l, cnt+1)
+        
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         # without moving at least one step, it is impossible to go through a loop
         if k == 0: 
             return Be.false(enc.manager)
-        
-        def _semantic(time, cnt):
-            if cnt == k:
-                return Be.false(enc.manager)
-            now = self.prop.semantic_with_loop(enc, time, k, l)
-            return now | _semantic(successor(time, k, l), cnt+1)
-        return _semantic(i, 0)
+        return self._semantic(enc, i, k, l, 0)
     
     def nnf(self, negated):
         if not negated:
@@ -533,12 +556,14 @@ class Eventually(Unary):
             return Globally(self.prop.nnf(True))
 
 class Next(Unary):
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3]))
     def semantic_no_loop(self, enc, i, k):
         if i >= k:
             return Be.false(enc.manager)
         else: 
             return self.prop.semantic_no_loop(enc, i+1, k)
 
+    @memoize(gen_cache(), key=lambda *x: (id(x[0]), x[2], x[3], x[4]))
     def semantic_with_loop(self, enc, i, k, l):
         # without moving at least one step, it is impossible to go through a loop
         if k == 0: 

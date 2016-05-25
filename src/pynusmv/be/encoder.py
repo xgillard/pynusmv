@@ -28,8 +28,8 @@ from pynusmv.nusmv.enc.bool import bool  as _bool
 from enum                   import IntEnum
 from collections            import Iterator 
 from pynusmv.node           import Node
-from pynusmv.utils          import PointerWrapper, indexed
-from pynusmv.collections    import NodeList 
+from pynusmv.utils          import PointerWrapper, indexed, memoize
+from pynusmv.collections    import NodeList  
 from pynusmv.fsm            import SymbTable
 from pynusmv.be.expression  import Be
 from pynusmv.be.manager     import BeRbcManager
@@ -519,7 +519,9 @@ class BeEnc(PointerWrapper):
           contained into the variable manager, to be used by any operation on 
           BEs
         """
-        return BeRbcManager(_be.BeEnc_get_be_manager(self._ptr))
+        if not hasattr(self, "__manager"):
+            setattr(self, '__manager', BeRbcManager(_be.BeEnc_get_be_manager(self._ptr)))
+        return getattr(self, '__manager')
     
     @property
     def max_time(self):
@@ -742,6 +744,8 @@ class BeEnc(PointerWrapper):
         ptr = _be.BeEnc_shift_curr_to_next(self._ptr, expr._ptr)
         return Be(ptr, self.manager)
     
+    cache = {}
+    @memoize(cache, key=lambda *x: (x[1]._ptr, x[2]))
     def shift_to_time(self, expr, time):
         """
         Returns a *timed* Be expression corresponding to `expr` in which all 

@@ -7,7 +7,7 @@ from pynusmv.sat        import SatSolverResult, SatSolverFactory, Polarity
 from pynusmv.bmc.utils  import generate_counter_example
 from tools.bmcLTL.gen   import generate_problem
 
-def check_ltl_onepb(fml, length, no_fairness=False, no_invar=False):
+def check_ltl_onepb(fml, length, no_fairness=False, no_invar=False, dry_run=False):
     """
     This function verifies that the given FSM satisfies the given property
     for paths with an exact length of `length`.
@@ -30,19 +30,22 @@ def check_ltl_onepb(fml, length, no_fairness=False, no_invar=False):
     """
     fsm    = master_be_fsm()
     pb     = generate_problem(fml, fsm, length, no_fairness, no_invar)
-    cnf    = pb.to_cnf(Polarity.POSITIVE)
     
-    solver = SatSolverFactory.create()
-    solver+= cnf
-    solver.polarity(cnf, Polarity.POSITIVE)
+    if not dry_run:
+        cnf    = pb.to_cnf(Polarity.POSITIVE)
+        
+        solver = SatSolverFactory.create()
+        solver+= cnf
+        solver.polarity(cnf, Polarity.POSITIVE)
+        
+        if solver.solve() == SatSolverResult.SATISFIABLE:
+            cnt_ex = generate_counter_example(fsm, pb, solver, length, str(fml))
+            return ("Violation", cnt_ex)
+        else:
+            return ("Ok", None)
+    return ("Ok", None)
     
-    if solver.solve() == SatSolverResult.SATISFIABLE:
-        cnt_ex = generate_counter_example(fsm, pb, solver, length, str(fml))
-        return ("Violation", cnt_ex)
-    else:
-        return ("Ok", None)
-    
-def check_ltl(fml, bound, no_fairness=False, no_invar=False):
+def check_ltl(fml, bound, no_fairness=False, no_invar=False, dry_run=False):
     """
     This function performs the bounded model checking of the formula given in 
     text format (as specified per the grammar in `parsing` module). It verifies
@@ -64,7 +67,7 @@ def check_ltl(fml, bound, no_fairness=False, no_invar=False):
         trace is a counter example leading to a property violation.
     """
     for i in range(bound+1):
-        status, trace = check_ltl_onepb(fml, i, no_fairness, no_invar) 
+        status, trace = check_ltl_onepb(fml, i, no_fairness, no_invar, dry_run) 
         if status != "Ok":
             return (status, i, trace)
         else:

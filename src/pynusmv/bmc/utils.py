@@ -15,24 +15,17 @@ from enum import IntEnum
 from pynusmv.nusmv.bmc      import bmc    as _bmc
 from pynusmv.nusmv.parser   import parser as _parser 
 
-from pynusmv.nusmv.enc.base import base   as _basenc 
-from pynusmv.nusmv.enc.bool import bool   as _boolenc 
-from pynusmv.nusmv.enc.be   import be     as _beenc 
-
-from pynusmv.nusmv.compile  import compile as _compile 
-
-from pynusmv.utils          import indexed
+from pynusmv.utils          import indexed, memoize
 from pynusmv                import glob
 from pynusmv.wff            import Wff
 from pynusmv.trace          import Trace 
 from pynusmv.be.expression  import Be 
 from pynusmv.bmc            import glob as bmcglob
-from pynusmv.collections    import NodeList
 
 __all__ = [# loop related stuffs
            'all_loopbacks', 'no_loopback', 'is_all_loopbacks', 'is_no_loopback',
            'loop_from_string', 'convert_relative_loop_to_absolute', 
-           'check_consistency', 'loop_condition', 'successor'
+           'check_consistency', 'loop_condition', 'successor', 'fairness_constraint',
            # inlining
            'apply_inlining', 'apply_inlining_for_incremental_algo',
            # nodes/normalization
@@ -163,6 +156,7 @@ def convert_relative_loop_to_absolute(l, k):
     
     return _bmc.Bmc_Utils_RelLoop2AbsLoop(l, k)
 
+@memoize(bmcglob.gen_cache(), key=lambda x:("LC", x[1], x[2]))
 def loop_condition(enc, k, l):
     """
     This function generates a Be expression representing the loop condition
@@ -195,6 +189,7 @@ def loop_condition(enc, k, l):
         cond = cond & ( vl.iff(vk) )
     return cond
 
+@memoize(bmcglob.gen_cache(), key=lambda x:("FC", x[1], x[2]))
 def fairness_constraint(fsm, k, l):
     """
     Computes a step of the constraint to be added to the loop side of the BE 
