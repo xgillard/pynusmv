@@ -171,6 +171,23 @@ extensions.append(
                 runtime_library_dirs = runtime_library_dirs)
     )
     
+
+extensions.append(
+     Extension('pynusmv.bmc.lower_intf._lower_intf',
+                ['pynusmv/bmc/lower_intf/lower_intf.i'],
+                depends = [ 'nusmv/src/utils/defs.h',
+                            'pynusmv/bmc/lower_intf/lower_intf.h',
+                            'lib/libnusmv.so',
+
+                            'pynusmv/nusmv/typedefs.tpl',
+
+                            'pynusmv/bmc/lower_intf.py',
+                            'pynusmv/bmc/lower_intf/lower_intf_wrap.c',],
+                swig_opts = swig_opts, libraries = libraries,
+                library_dirs = library_dirs, include_dirs = include_dirs,
+                runtime_library_dirs = runtime_library_dirs)
+    )
+
 # cinit module
 extensions.append(
      Extension('pynusmv.nusmv.cinit._cinit',

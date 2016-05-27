@@ -62,4 +62,4 @@ ASSIGN
 FAIRNESS 
   -- This fairness constraint forces NuSMV to consider traces where the 
   -- philosophers processes actually do run.
-  running;
+  !waiting;

@@ -14,8 +14,9 @@ from enum import IntEnum
 
 from pynusmv.nusmv.bmc      import bmc    as _bmc
 from pynusmv.nusmv.parser   import parser as _parser 
+from pynusmv.bmc.lower_intf import lower_intf as _lower
 
-from pynusmv.utils          import indexed, memoize
+from pynusmv.utils          import indexed
 from pynusmv                import glob
 from pynusmv.wff            import Wff
 from pynusmv.trace          import Trace 
@@ -156,7 +157,6 @@ def convert_relative_loop_to_absolute(l, k):
     
     return _bmc.Bmc_Utils_RelLoop2AbsLoop(l, k)
 
-@memoize(bmcglob.gen_cache(), key=lambda x:("LC", x[1], x[2]))
 def loop_condition(enc, k, l):
     """
     This function generates a Be expression representing the loop condition
@@ -172,6 +172,14 @@ def loop_condition(enc, k, l):
     (same state being all variables have the same value in both states) we know
     there is a backloop on the path
     
+    .. note::
+    
+        This code was first implemented in Python with PyNuSMV but, since
+        the Python implementation proved to be a huge performance bottleneck
+        (profiling revealed that useless memory management was dragging the
+        whole system behind), it has been translated back to C to deliver much
+        better perf. results.
+    
     :param fsm: the fsm on which the condition will be evaluated
     :param k: the highest time
     :param l: the time where the loop is assumed to start
@@ -182,19 +190,25 @@ def loop_condition(enc, k, l):
     """
     check_consistency(k, l)
     
-    cond = Be.true(enc.manager)
-    for v in enc.curr_variables: # for all untimed variable
-        vl   = v.at_time[l].boolean_expression
-        vk   = v.at_time[k].boolean_expression
-        cond = cond & ( vl.iff(vk) )
-    return cond
+    # Note: this code was first implemented in Python with PyNuSMV but, since
+    #       the Python implementation proved to be a huge performance bottleneck
+    #       (profiling revealed that useless memory management was dragging the
+    #       whole system behind).
+    return Be(_lower.loop_condition(enc._ptr, k, l), enc.manager)
 
-@memoize(bmcglob.gen_cache(), key=lambda x:("FC", x[1], x[2]))
 def fairness_constraint(fsm, k, l):
     """
     Computes a step of the constraint to be added to the loop side of the BE 
     when one wants to take fairness into account for the case where we consider 
     the existence of a k-l loop (between k and l obviously).
+    
+    .. note::
+    
+        This code was first implemented in Python with PyNuSMV but, since
+        the Python implementation proved to be a huge performance bottleneck
+        (profiling revealed that useless memory management was dragging the
+        whole system behind), it has been translated back to C to deliver much
+        better perf. results.
     
     :param fsm: the fsm whose transition relation must be unrolled
     :param k: the maximum (horizon/bound) time of the problem
@@ -206,20 +220,11 @@ def fairness_constraint(fsm, k, l):
     """
     check_consistency(k, l)
     
-    if is_no_loopback(l):
-        return Be.false(fsm.encoding.manager)
-    
-    constraint = Be.true(fsm.encoding.manager)
-    # nothing to generate, stop
-    if k == 0:
-        return constraint
-    
-    for fairness in fsm.fairness_iterator():
-        # just a shortcut for the loop to create 
-        #    \bigvee_{l}^{k-1} (fairness_{l})
-        constraint &= fsm.encoding.or_interval(fairness, l, k-1)
-    return constraint
-
+    # Note: this code was first implemented in Python with PyNuSMV but, since
+    #       the Python implementation proved to be a huge performance bottleneck
+    #       (profiling revealed that useless memory management was dragging the
+    #       whole system behind).
+    return Be(_lower.fairness_constraint(fsm._ptr, k, l), fsm.encoding.manager)
 
 def successor(time, k, l):
     """

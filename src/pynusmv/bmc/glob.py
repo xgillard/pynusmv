@@ -15,6 +15,8 @@ from pynusmv.nusmv.trace import trace as _trace
 from pynusmv.nusmv.trace.exec_ import exec_ as _trc_exec
 from pynusmv.nusmv.prop import prop as _prop
 
+from pynusmv.bmc.lower_intf import lower_intf as _lower
+
 from pynusmv import glob
 from pynusmv.be.fsm import BeFsm
 from pynusmv.exception import NuSMVNeedBooleanModelError
@@ -106,6 +108,8 @@ def bmc_exit():
     global __be_fsm
     _bmc.Bmc_Quit()
     __be_fsm = None
+    
+    _lower.MEMOIZER_clear()
 
 def build_master_be_fsm():
     """

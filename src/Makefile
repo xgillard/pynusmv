@@ -1,4 +1,4 @@
-.PHONY: cudd zchaff minisat nusmv pynusmv test
+.PHONY: cudd zchaff minisat nusmv bmc_lower pynusmv test
 
 
 SF=$(shell getconf LONG_BIT)
@@ -35,7 +35,7 @@ endif
 
 
 
-all: cudd zchaff nusmv pynusmv
+all: cudd zchaff nusmv bmc_lower pynusmv
 
 
 cudd:
@@ -64,8 +64,10 @@ nusmv: cudd zchaff minisat
 		make; \
 	fi
 
+bmc_lower:
+	gcc -c pynusmv/bmc/lower_intf/lower_intf.c -o pynusmv/bmc/lower_intf/lower_intf.o -Inusmv -Inusmv/src -Icudd-2.4.1.1/include
 
-pynusmv: nusmv
+pynusmv: nusmv bmc_lower
 ifneq ($(SWIG),)
 	@if [ ! -f lib/libnusmv.so ]; then ./build_libnusmv.sh; fi; \
 	$(PYTHON) setup.py build_ext --inplace --swig=$(SWIG)
