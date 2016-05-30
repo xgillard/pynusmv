@@ -28,7 +28,7 @@ from pynusmv.nusmv.enc.bool import bool  as _bool
 from enum                   import IntEnum
 from collections            import Iterator 
 from pynusmv.node           import Node
-from pynusmv.utils          import PointerWrapper, indexed, memoize
+from pynusmv.utils          import PointerWrapper, indexed
 from pynusmv.collections    import NodeList  
 from pynusmv.fsm            import SymbTable
 from pynusmv.be.expression  import Be
@@ -744,8 +744,6 @@ class BeEnc(PointerWrapper):
         ptr = _be.BeEnc_shift_curr_to_next(self._ptr, expr._ptr)
         return Be(ptr, self.manager)
     
-    cache = {}
-    @memoize(cache, key=lambda *x: (x[1]._ptr, x[2]))
     def shift_to_time(self, expr, time):
         """
         Returns a *timed* Be expression corresponding to `expr` in which all 

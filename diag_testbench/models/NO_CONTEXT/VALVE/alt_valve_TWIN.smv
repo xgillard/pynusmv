@@ -1,0 +1,52 @@
+-- Coupled twin version of the VALVE MODULE
+MODULE visible
+-- This module encompasses the visible state of the automaton
+VAR
+	cmd  : {open, close};
+	flow : {off, low, nominal, high};
+
+MODULE valve(cmd, flow)
+--
+-- The valve model with various flows, modes and error modes originating from
+-- ``From Livingstone to SMV: Formal Verification for Autonomous Spacecrafts''
+-- C. Pecheur, R. Simmons -- NASA.
+--
+VAR 
+	mode : {open, closed, stuck_open, stuck_closed};
+DEFINE 
+	faults := {stuck_open, stuck_closed};
+	faulty := mode in faults;
+INVAR
+	mode = closed -> flow = off;
+INVAR
+	mode = stuck_closed -> flow = off;
+INVAR
+	mode = open -> flow in { low, nominal, high};
+INVAR
+	mode = stuck_open -> flow in { low, nominal, high};
+INIT
+	mode = closed;
+TRANS
+	(mode = closed & cmd = open) -> (  next(mode) = open | next(mode) in faults );
+
+
+MODULE main
+-- The main module used to perform the verification.
+VAR
+	visible: visible;
+
+	test   : valve(visible.cmd, visible.flow);
+	twin   : valve(visible.cmd, visible.flow);
+--
+-- DIAGNOSABILITYSPEC
+-- 		test.faulty ; ! test.faulty
+
+TRANS
+	visible.flow = off -> next(visible.flow) != off  ;
+TRANS
+	test.mode = closed -> next(test.mode) != stuck_open;
+TRANS
+	twin.mode = closed -> next(twin.mode) != stuck_open;
+
+LTLSPEC
+	G !(test.faulty & ! twin.faulty)

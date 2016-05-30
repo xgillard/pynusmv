@@ -25,8 +25,7 @@ from pynusmv.exception import NuSMVNoReadModelError
 from pynusmv.be.encoder import BeEnc
 
 __be_fsm   = None
-__gen_cache= {}
-    
+
 def bmc_setup(force=False):
     """
     Initializes the bmc sub-system, and builds the model in a Boolean Expression 
@@ -92,19 +91,13 @@ def bmc_setup(force=False):
         _trc_exec.SATPartialTraceExecutor2partialTraceExecutor(partial_restarting))
     
     _compile.cmp_struct_set_bmc_setup(glob.global_compile_cmps())
-    
-    global __gen_cache
-    __gen_cache.clear()
 
 def bmc_exit():
     """
     Releases all resources associated to the bmc model manager. 
     If you want to do bmc again after calling this, you will have to call
     :func:`bmc_setup` or :func:`go_bmc` again.
-    """
-    global __gen_cache
-    __gen_cache.clear()
-    
+    """  
     global __be_fsm
     _bmc.Bmc_Quit()
     __be_fsm = None
@@ -154,14 +147,6 @@ def master_be_fsm():
     if __be_fsm is None:
         __be_fsm = BeFsm.global_master_instance()
     return __be_fsm
-
-def gen_cache():
-    """
-    Returns the global generation cache to used in memoized functions that 
-    generate boolean expressions.
-    """
-    global __gen_cache
-    return __gen_cache
 
 def go_bmc(force=False):
     """

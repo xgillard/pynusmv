@@ -132,6 +132,9 @@ def arguments():
        (parsed_args.sigma12 is None):
         parsed_args.sigma1 = "TRUE"
         parsed_args.sigma2 = "TRUE"
+    else:
+        parsed_args.sigma1 = parsed_args.sigma12
+        parsed_args.sigma2 = parsed_args.sigma12
     
     return parsed_args
 
@@ -351,8 +354,7 @@ def diagnosability_violation(observable_names, solver, k):
     # create the trace that will actually get returned
     counter_ex = "############### DIAGNOSABILITY VIOLATION ############\n"
     
-    # because step indices start at one
-    for time in range(k+1):
+    for time in range(k):
         counter_ex+= "*************** TIME {:03} ****************************\n".format(time)
         counter_ex+= "--------------- OBSERVABLE STATE --------------------\n"
         # add all observable values.

@@ -1,0 +1,9 @@
+#####
+# Command run to produce the profile main.d3.35.prof
+#####
+python3 -m cProfile -o main.d3.35.prof ../src/tools/bmcLTL/main.py -s '<> [] (p1.waiting => <> ! p1.waiting)' -k 35 philo_depth3/philo_10.smv
+
+#####
+# Command run to analyze the profile.
+#####
+snakeviz main.d3.35.prof

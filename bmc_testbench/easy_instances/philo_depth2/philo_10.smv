@@ -1,0 +1,75 @@
+-------------------------------------------------------------------------------
+-- These modules model a version of the well known dining philosophers problem
+-- it is based on an implemementation proposed by D. Hoffman from East Carolina
+-- University in the scope of SENG6250, session of fall 2015.
+-- The video is available online at : https://youtu.be/JBESxiZ5Wao
+-------------------------------------------------------------------------------
+MODULE main
+-- This module is the 'program driver' : it associates the various philosophers
+-- with their forks. Another way to consider the role of this 'main' module is
+-- to consider as being the table around which the philosophers are dining.
+VAR
+  forks : array 0..9 of {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, nobody};
+  p1    : process philosopher(1, forks[0], forks[1]);
+  p2    : process philosopher(2, forks[1], forks[2]);
+  p3    : process philosopher(3, forks[2], forks[3]);
+  p4    : process philosopher(4, forks[3], forks[4]);
+  p5    : process philosopher(5, forks[4], forks[5]);
+  p6    : process philosopher(6, forks[5], forks[6]);
+  p7    : process philosopher(7, forks[6], forks[7]);
+  p8    : process philosopher(8, forks[7], forks[8]);
+  p9    : process philosopher(9, forks[8], forks[9]);
+  p10   : process philosopher(10,forks[9], forks[0]);
+
+ASSIGN
+  init(forks[0]) := nobody;
+  init(forks[1]) := nobody;
+  init(forks[2]) := nobody;
+  init(forks[3]) := nobody;
+  init(forks[4]) := nobody;
+  init(forks[5]) := nobody;
+  init(forks[6]) := nobody;
+  init(forks[7]) := nobody;
+  init(forks[8]) := nobody;
+  init(forks[9]) := nobody;
+
+LTLSPEC -- no deadlock expressed in LTL
+  G (p1.waiting -> F !p1.waiting);
+
+MODULE philosopher(id, left, right)
+-- This module models the behavior of one of the philosopher participating to
+-- the dinner.
+VAR
+  status : {thinking, hungry, eating, done};
+DEFINE
+  gotleft := (left=id);
+  gotright:= (right=id);
+  waiting := ((status = hungry) & gotleft & !gotright);
+
+ASSIGN
+  init(status) := thinking;
+
+  next (status) := case
+    status = thinking : {thinking, hungry};
+    status = hungry & gotleft & gotright : eating;
+    status = eating : {eating, done};
+    status = done & !gotleft & !gotright : thinking;
+    TRUE : status;
+    esac;
+
+  next(left) := case
+    status = hungry & left = nobody : id ;
+    status = done & gotleft         : nobody;
+    TRUE                            : left;
+    esac;
+
+  next(right) := case
+    status = hungry & gotleft & right = nobody: id;
+    status = done   & gotright      : nobody;
+    TRUE                            : right;
+    esac;
+
+FAIRNESS 
+  -- This fairness constraint forces NuSMV to consider traces where the 
+  -- philosophers processes actually do run.
+  !waiting;

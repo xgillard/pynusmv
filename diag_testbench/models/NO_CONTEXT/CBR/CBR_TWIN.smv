@@ -1,0 +1,102 @@
+MODULE led 
+VAR
+  current_in : {on_, off_};
+  led_state : {on_, off_};
+  _state : {nominal_};
+DEFINE
+  _broken := FALSE;
+INIT (_state = nominal_)
+TRANS ((_state = nominal_) -> (next(_state) = _state))
+INIT ((_state = nominal_) -> (led_state = current_in))
+TRANS ((next(_state) = nominal_) -> (next(led_state) = next(current_in)))
+
+MODULE cb 
+VAR
+  cmd_in : {on_, off_, no_cmd_, reset_};
+  current_in : {on_, off_};
+  current_out : {on_, off_};
+  _state : {on_, off_, tripped_, blown_, unknown_cb_fault_};
+DEFINE
+  _fault_states := {tripped_, blown_, unknown_cb_fault_};
+  _broken := (_state in _fault_states);
+INIT (_state = on_)
+TRANS (((_state = on_) & (cmd_in = off_)) -> (next(_state) in (off_ union _fault_states)))
+TRANS (((_state = on_) & !(cmd_in = off_)) -> (next(_state) in (_state union _fault_states)))
+TRANS (((_state = off_) & (cmd_in = on_)) -> (next(_state) in (on_ union _fault_states)))
+TRANS (((_state = off_) & !(cmd_in = on_)) -> (next(_state) in (_state union _fault_states)))
+TRANS (((_state = tripped_) & (cmd_in = reset_)) -> (next(_state) in (off_ union _fault_states)))
+TRANS (((_state = tripped_) & !(cmd_in = reset_)) -> (next(_state) in (_state union _fault_states)))
+TRANS ((_state = blown_) -> (next(_state) in (_state union _fault_states)))
+TRANS ((_state = unknown_cb_fault_) -> (next(_state) in (_state union _fault_states)))
+INIT ((_state = on_) -> (current_in = current_out))
+TRANS ((next(_state) = on_) -> (next(current_in) = next(current_out)))
+INIT ((_state = off_) -> (current_out = off_))
+TRANS ((next(_state) = off_) -> (next(current_out) = off_))
+INIT ((_state = tripped_) -> (current_out = off_))
+TRANS ((next(_state) = tripped_) -> (next(current_out) = off_))
+INIT ((_state = blown_) -> (current_out = off_))
+TRANS ((next(_state) = blown_) -> (next(current_out) = off_))
+
+MODULE current_source 
+VAR
+  current_out : {on_, off_};
+  _state : {nominal_};
+DEFINE
+  _broken := FALSE;
+INIT (_state = nominal_)
+TRANS ((_state = nominal_) -> (next(_state) = _state))
+INIT ((_state = nominal_) -> (current_out = on_))
+TRANS ((next(_state) = nominal_) -> (next(current_out) = on_))
+
+MODULE cb_model(source, led_1, led_2, led_3, led_4)
+VAR
+-- STRUCTURE
+  cb_1 : cb;
+  cb_2 : cb;
+  cb_3 : cb;
+  cb_4 : cb;
+  cb_5 : cb;
+  cb_6 : cb;
+  cb_7 : cb;
+DEFINE
+  _broken := source._broken | cb_7._broken | cb_6._broken | cb_5._broken | cb_4._broken | cb_3._broken | cb_2._broken | cb_1._broken | led_4._broken | led_3._broken | led_2._broken | led_1._broken;
+INIT (source.current_out = cb_7.current_in)
+TRANS (next(source.current_out) = next(cb_7.current_in))
+INIT (cb_7.current_out = cb_6.current_in)
+TRANS (next(cb_7.current_out) = next(cb_6.current_in))
+INIT (cb_7.current_out = cb_5.current_in)
+TRANS (next(cb_7.current_out) = next(cb_5.current_in))
+INIT (cb_6.current_out = cb_4.current_in)
+TRANS (next(cb_6.current_out) = next(cb_4.current_in))
+INIT (cb_6.current_out = cb_3.current_in)
+TRANS (next(cb_6.current_out) = next(cb_3.current_in))
+INIT (cb_5.current_out = cb_2.current_in)
+TRANS (next(cb_5.current_out) = next(cb_2.current_in))
+INIT (cb_5.current_out = cb_1.current_in)
+TRANS (next(cb_5.current_out) = next(cb_1.current_in))
+INIT (cb_4.current_out = led_4.current_in)
+TRANS (next(cb_4.current_out) = next(led_4.current_in))
+INIT (cb_3.current_out = led_3.current_in)
+TRANS (next(cb_3.current_out) = next(led_3.current_in))
+INIT (cb_2.current_out = led_2.current_in)
+TRANS (next(cb_2.current_out) = next(led_2.current_in))
+INIT (cb_1.current_out = led_1.current_in)
+TRANS (next(cb_1.current_out) = next(led_1.current_in))
+
+MODULE visible
+VAR
+  led_1 : led;
+  led_2 : led;
+  led_3 : led;
+  led_4 : led;
+  source : current_source;
+
+MODULE main
+VAR
+-- STRUCTURE
+  visible  : visible;
+  test     : cb_model(visible.source, visible.led_1, visible.led_2, visible.led_3, visible.led_4);
+  twin     : cb_model(visible.source, visible.led_1, visible.led_2, visible.led_3, visible.led_4);
+
+LTLSPEC
+  G ! ( !test.cb_7._broken & twin.cb_7._broken  )
