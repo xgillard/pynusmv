@@ -1,3 +1,4 @@
+
 -------------------------------------------------------------------------------
 -- These modules model a version of the well known dining philosophers problem
 -- it is based on an implemementation proposed by D. Hoffman from East Carolina
@@ -23,7 +24,7 @@ ASSIGN
   init(forks[3]) := nobody;
   init(forks[4]) := nobody;
 
-LTLSPEC -- no deadlock expressed in LTL
+LTLSPEC
   G (p1.waiting -> F !p1.waiting);
 
 MODULE philosopher(id, left, right)
@@ -59,7 +60,8 @@ ASSIGN
     TRUE                            : right;
     esac;
 
-FAIRNESS 
-  -- This fairness constraint forces NuSMV to consider traces where the 
+FAIRNESS
+  -- This fairness constraint forces NuSMV to consider traces where the
   -- philosophers processes actually do run.
   !waiting;
+ 

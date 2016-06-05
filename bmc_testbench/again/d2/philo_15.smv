@@ -1,3 +1,4 @@
+
 -------------------------------------------------------------------------------
 -- These modules model a version of the well known dining philosophers problem
 -- it is based on an implemementation proposed by D. Hoffman from East Carolina
@@ -9,12 +10,22 @@ MODULE main
 -- with their forks. Another way to consider the role of this 'main' module is
 -- to consider as being the table around which the philosophers are dining.
 VAR
-  forks : array 0..4 of { 1, 2, 3, 4, 5, nobody};
+  forks : array 0..14 of { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, nobody};
   p1    : process philosopher(1, forks[0], forks[1]);
   p2    : process philosopher(2, forks[1], forks[2]);
   p3    : process philosopher(3, forks[2], forks[3]);
   p4    : process philosopher(4, forks[3], forks[4]);
-  p5    : process philosopher(5, forks[4], forks[0]);
+  p5    : process philosopher(5, forks[4], forks[5]);
+  p6    : process philosopher(6, forks[5], forks[6]);
+  p7    : process philosopher(7, forks[6], forks[7]);
+  p8    : process philosopher(8, forks[7], forks[8]);
+  p9    : process philosopher(9, forks[8], forks[9]);
+  p10    : process philosopher(10, forks[9], forks[10]);
+  p11    : process philosopher(11, forks[10], forks[11]);
+  p12    : process philosopher(12, forks[11], forks[12]);
+  p13    : process philosopher(13, forks[12], forks[13]);
+  p14    : process philosopher(14, forks[13], forks[14]);
+  p15    : process philosopher(15, forks[14], forks[0]);
 
 ASSIGN
   init(forks[0]) := nobody;
@@ -22,8 +33,18 @@ ASSIGN
   init(forks[2]) := nobody;
   init(forks[3]) := nobody;
   init(forks[4]) := nobody;
+  init(forks[5]) := nobody;
+  init(forks[6]) := nobody;
+  init(forks[7]) := nobody;
+  init(forks[8]) := nobody;
+  init(forks[9]) := nobody;
+  init(forks[10]) := nobody;
+  init(forks[11]) := nobody;
+  init(forks[12]) := nobody;
+  init(forks[13]) := nobody;
+  init(forks[14]) := nobody;
 
-LTLSPEC -- no deadlock expressed in LTL
+LTLSPEC
   G (p1.waiting -> F !p1.waiting);
 
 MODULE philosopher(id, left, right)
@@ -59,7 +80,8 @@ ASSIGN
     TRUE                            : right;
     esac;
 
-FAIRNESS 
-  -- This fairness constraint forces NuSMV to consider traces where the 
+FAIRNESS
+  -- This fairness constraint forces NuSMV to consider traces where the
   -- philosophers processes actually do run.
   !waiting;
+ 

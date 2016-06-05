@@ -38,13 +38,12 @@ def run_nusmv(depth, size, bound):
     os.system("./nusmv/NuSMV -bmc -sat_solver minisat -bmc_length {} {}".format(bound, instance))
 
 ##########
-for run in [2, 3, 4]:
-    for depth in [2, 3]:
-        with open("../bmc_testbench/hard_instances/run_{}/results_d{}.csv".format(run, depth), "w") as out:
-            print("SIZE ; NuSMV ; Alt2 ; Main ", file=out)
-            for size in range(2, 11):
-                print("{} ;".format(size), end="", file=out)
-                print("{:.05f} ; ".format(run_nusmv(depth, size, 30)), end="", file=out)
-                print("{:.05f} ; ".format(run_alt2(depth, size, 30)), end="", file=out)
-                print("{:.05f} ; ".format(run_main(depth, size, 30)), file=out)
+for run in [2]:#[2, 3, 4]:
+    for depth in [2]:#[2, 3]:
+        with open("../bmc_testbench/hard_instances/results_bound_d{}.csv".format(depth), "w") as out:
+            print("Bound ; NuSMV ; Python ", file=out)
+            for bound in range(0, 20):
+                print("{} ;".format(bound), end="", file=out)
+                print("{:.05f} ; ".format(run_nusmv(depth, 10, bound)), end="", file=out)
+                print("{:.05f} ; ".format(run_main(depth,  10, bound)), file=out)
             print("\n", file=out)

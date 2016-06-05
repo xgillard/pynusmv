@@ -1,3 +1,4 @@
+
 -------------------------------------------------------------------------------
 -- These modules model a version of the well known dining philosophers problem
 -- it is based on an implemementation proposed by D. Hoffman from East Carolina
@@ -9,12 +10,14 @@ MODULE main
 -- with their forks. Another way to consider the role of this 'main' module is
 -- to consider as being the table around which the philosophers are dining.
 VAR
-  forks : array 0..4 of { 1, 2, 3, 4, 5, nobody};
+  forks : array 0..6 of { 1, 2, 3, 4, 5, 6, 7, nobody};
   p1    : process philosopher(1, forks[0], forks[1]);
   p2    : process philosopher(2, forks[1], forks[2]);
   p3    : process philosopher(3, forks[2], forks[3]);
   p4    : process philosopher(4, forks[3], forks[4]);
-  p5    : process philosopher(5, forks[4], forks[0]);
+  p5    : process philosopher(5, forks[4], forks[5]);
+  p6    : process philosopher(6, forks[5], forks[6]);
+  p7    : process philosopher(7, forks[6], forks[0]);
 
 ASSIGN
   init(forks[0]) := nobody;
@@ -22,8 +25,10 @@ ASSIGN
   init(forks[2]) := nobody;
   init(forks[3]) := nobody;
   init(forks[4]) := nobody;
+  init(forks[5]) := nobody;
+  init(forks[6]) := nobody;
 
-LTLSPEC -- no deadlock expressed in LTL
+LTLSPEC
   G (p1.waiting -> F !p1.waiting);
 
 MODULE philosopher(id, left, right)
@@ -59,7 +64,8 @@ ASSIGN
     TRUE                            : right;
     esac;
 
-FAIRNESS 
-  -- This fairness constraint forces NuSMV to consider traces where the 
+FAIRNESS
+  -- This fairness constraint forces NuSMV to consider traces where the
   -- philosophers processes actually do run.
   !waiting;
+ 

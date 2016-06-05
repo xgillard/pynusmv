@@ -1,0 +1,93 @@
+MODULE Source
+-- a source of the flow (ie. power)
+VAR	
+	status : {on, off};
+DEFINE
+	output := status = on;
+ASSIGN
+	init(status) := on;
+	next(status) := case
+					status = on  : {on, off};
+					status = off : off;
+					esac;
+
+
+MODULE Node(a, b)
+VAR
+	output : boolean;
+INVAR
+	output <-> (a.output xor b.output);
+-- a node that merges the signal. For a simple repeater, just use a=b
+--VAR 
+--	status : {on, broken};
+--DEFINE
+--	output := (a.output | b.output) & status = on;
+--ASSIGN
+--	init(status) := on;
+--	next(status) := case
+--					status = on     : {on, broken};
+--					status = broken : broken;
+--					esac;
+
+MODULE Led(src)
+-- 
+VAR 
+	light : boolean;
+INVAR
+	light = src.output;
+
+--
+--
+--
+--
+--
+
+MODULE Graph
+VAR
+	s0 : Source;
+	s1 : Source;
+
+	-- repeaters (mux)
+	n0  : Node(s0, s0);
+	n00 : Node(n0, n0);
+	n01 : Node(n0, n0);
+	n000: Node(n00, n00);
+	n001: Node(n00, n00);
+	n010: Node(n01, n01);
+	n011: Node(n01, n01);
+
+	n1  : Node(s1, s1);
+	n10 : Node(n1, n1);
+	n11 : Node(n1, n1);
+	n100: Node(n10, n10);
+	n101: Node(n10, n10);
+	n110: Node(n11, n11);
+	n111: Node(n11, n11);
+
+
+	n012: Node(n01, n01);
+	n112: Node(n11, n11);
+
+	-- merges
+	w1 : Node(n000, n001);
+	w2 : Node(n010, n011);
+	w3 : Node(n100, n101);
+	w4 : Node(n110, n111);
+
+	wb : Node(n012, n112);
+
+	-- leds
+	l1 : Led(w1);
+	l2 : Led(w2);
+	l3 : Led(w3);
+	l4 : Led(w4);
+
+	lb : Led(wb);
+
+MODULE main
+VAR 
+	test : Graph;
+
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "test.s0.output & ! test.s1.output ; ! test.s0.output & test.s1.output" -i "test.s0.status = on & test.s1.status = on" -or "test.l.*" -k 10
+
+

@@ -1,0 +1,105 @@
+MODULE Source
+-- a source of the flow (ie. power)
+VAR	
+	status : {on, off};
+DEFINE
+	output := status = on;
+ASSIGN
+	init(status) := on;
+	next(status) := case
+					status = on  : {on, off};
+					status = off : off;
+					esac;
+
+
+MODULE Node(a, b)
+-- a node that merges the signal. For a simple repeater, just use a=b
+VAR 
+	status : {on, broken};
+DEFINE
+	output := (a.output | b.output) & status = on;
+ASSIGN
+	init(status) := on;
+	next(status) := case
+					status = on     : {on, broken};
+					status = broken : broken;
+					esac;
+
+MODULE Led(src)
+-- 
+VAR 
+	light : boolean;
+INVAR
+	light = src.output;
+
+--
+--
+--
+--
+--
+
+MODULE Graph
+--                   +-->n000+-------------------------------------+
+--           +--->n00|                                             |
+--           |       +-->n001 +------------------------+           |
+--           |                                         |           |
+-- s0 +--->n0|                                         |           |
+--           |       +-->n010+-------------+           |           |
+--           +--->n01|                     |           |           |
+--                   +-->n011+--+          |           |           |
+--                              v    +--+  v    +--+   v    +--+   v    +--+
+--                              w4+-->l4|  w3+-->l3|   w3+-->l3|   w1+-->l1|
+--                              ^    +--+  ^    +--+   ^    +--+   ^    +--+
+--                              |          |           |           |
+--                   +-->n100+--+          |           |           |
+--           +--->n10|                     |           |           |
+--           |       +-->n101+-------------+           |           |
+--           |                                         |           |
+-- s1 +--->n1|                                         |           |
+--           |       +-->n110+-------------------------+           |
+--           +--->n11|                                             |
+--                   +-->n111+-------------------------------------+
+-- 
+-- 
+VAR
+	s0  : Source;
+	s1  : Source;
+
+	-- repeaters (mux)
+	n0  : Node(s1, s1);
+	n1  : Node(s1, s1);
+
+	n00 : Node(n0, n0);
+	n01 : Node(n0, n0);
+
+	n10 : Node(n1, n1);
+	n11 : Node(n1, n1);
+
+	n000: Node(n00, n00);
+	n001: Node(n00, n00);
+	n010: Node(n01, n01);
+	n011: Node(n01, n01);
+	n100: Node(n10, n10);
+	n101: Node(n10, n10);
+	n110: Node(n11, n11);
+	n111: Node(n11, n11);
+
+	-- merges
+	w1  : Node(n111, n000);
+	w2  : Node(n110, n001);
+	w3  : Node(n101, n010);
+	w4  : Node(n100, n011);
+
+	-- leds
+	l1  : Led(w1);
+	l2  : Led(w2);
+	l3  : Led(w3);
+	l4  : Led(w4);
+
+MODULE main
+VAR 
+	test : Graph;
+
+-- ../src/tools/diagnosability.py models/Hard2.smv -s "test.s0.output & ! test.s1.output ; ! test.s0.output & test.s1.output" -i "test.s0.status = on & test.s1.status = on" -or "test.l.*" -k 10
+
+

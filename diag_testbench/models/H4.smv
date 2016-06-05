@@ -1,0 +1,37 @@
+MODULE Counter
+VAR
+	value : 0 .. 50;
+ASSIGN
+	init(value) := 0 .. 2;
+	next(value) := value + 1;
+
+
+MODULE Modulo(cnt, k)
+VAR
+	value : 0 .. 50;
+INVAR
+	value = cnt.value mod k;
+
+MODULE Config
+VAR
+	c : Counter;
+	m : Modulo(c, 10);
+
+MODULE main
+VAR
+	a : Config;
+--	b : Config;
+--	c : Config;
+--	d : Config;
+--	e : Config;
+--	f : Config;
+--	g : Config;
+
+--MODULE main
+--VAR 
+--	test : Problem;
+--	twin : Problem;
+
+-- time ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value > 49 ; a.c.value < 49" -k 60
+-- time ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value > 10 ; a.c.value < 10" -k 60
+--INVAR 

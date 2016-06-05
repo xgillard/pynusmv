@@ -1,0 +1,44 @@
+MODULE Counter
+VAR
+	value : 0 .. 60;
+ASSIGN
+	init(value) := 0 .. 5;
+	next(value) := value + 1;
+
+
+MODULE Modulo(cnt, k)
+VAR
+	value : 0 .. 1;
+INVAR
+	value = (cnt.value mod k) mod 2;
+
+MODULE Config
+VAR
+	c : Counter;
+	m : Modulo(c, 50);
+
+-- COMMANDE : 
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 10 ; a.c.value < 10" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 20 ; a.c.value < 20" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 30 ; a.c.value < 30" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 40 ; a.c.value < 40" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 50 ; a.c.value < 50" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 45 ; a.c.value < 45" -o "a.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value >= 45 ; a.c.value < 45" -o "a.m.value" -o "b.m.value" -o "c.m.value" -o "d.m.value" -o "e.m.value" -o "f.m.value" -o "g.m.value" -k 60
+--
+-- VERY HARD
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value = 7*49 ; a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value = 0" -o "b.m.value" -o "c.m.value" -o "d.m.value" -o "e.m.value" -o "f.m.value" -o "g.m.value" -k 60
+-- EASY
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "(a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) mod 10 = 7 ; (a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) mod 10 = 0" -o "b.m.value" -o "c.m.value" -o "d.m.value" -o "e.m.value" -o "f.m.value" -o "g.m.value" -k 60
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "(a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) = 7 ; (a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) = 8" -o "a.m.value"  -o "b.m.value" -o "c.m.value" -o "d.m.value" -o "e.m.value" -o "f.m.value" -o "g.m.value" -k 60
+
+-- ../src/tools/diagnosability.py models/HardInstance.smv -s "(a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) = 7*49 ; (a.c.value + b.c.value + c.c.value + d.c.value + e.c.value + f.c.value + g.c.value) = 0" -o "a.m.value"  -o "b.m.value" -o "c.m.value" -o "d.m.value" -o "e.m.value" -o "f.m.value" -o "g.m.value" -k 60
+MODULE main
+VAR
+	a : Config;
+	b : Config;
+	c : Config;
+	d : Config;
+	e : Config;
+	f : Config;
+	g : Config;
